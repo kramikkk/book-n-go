@@ -1,0 +1,153 @@
+import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
+
+const VALID_COLORS = ['blue', 'indigo', 'purple', 'rose', 'orange', 'green', 'teal']
+
+// ─── GET /api/admin/settings ──────────────────────────────────────────────────
+// Returns the admin's current settings row.
+//
+// Response 200:
+//   { settings: Settings }
+//
+// Settings shape:
+//   id, admin_id,
+//   business_name, business_email, business_phone, logo_url,
+//   slug, welcome_message, seo_title, seo_description,
+//   primary_color,
+//   new_booking_alerts, cancellation_alerts
+
+export async function GET() {
+  try {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (user.user_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+    const { data: settings, error } = await supabase
+      .from('settings')
+      .select('*')
+      .eq('admin_id', user.id)
+      .single()
+
+    if (error) {
+      return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 })
+    }
+
+    return NextResponse.json({ settings }, { status: 200 })
+  } catch {
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
+  }
+}
+
+// ─── PATCH /api/admin/settings ────────────────────────────────────────────────
+// Updates one or more settings fields. All fields are optional —
+// only the fields you send will be updated.
+//
+// Request body (all optional):
+//   business_name        string
+//   business_email       string
+//   business_phone       string
+//   slug                 string   (must be unique, lowercase, letters/numbers/hyphens only)
+//   welcome_message      string   (max 300 chars)
+//   seo_title            string   (max 60 chars)
+//   seo_description      string   (max 160 chars)
+//   primary_color        string   (blue | indigo | purple | rose | orange | green | teal)
+//   new_booking_alerts   boolean
+//   cancellation_alerts  boolean
+//
+// Response 200:
+//   { message: string, settings: Settings }
+
+export async function PATCH(request: Request) {
+  try {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (user.user_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+    const body = await request.json()
+
+    const {
+      business_name,
+      business_email,
+      business_phone,
+      slug,
+      welcome_message,
+      seo_title,
+      seo_description,
+      primary_color,
+      new_booking_alerts,
+      cancellation_alerts,
+    } = body
+
+    // Validate slug format if provided
+    if (slug !== undefined) {
+      if (typeof slug !== 'string' || !/^[a-z0-9-]+$/.test(slug) || slug.length < 3 || slug.length > 50) {
+        return NextResponse.json(
+          { error: 'Slug must be 3–50 characters, lowercase letters, numbers, and hyphens only' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Validate field lengths if provided
+    if (welcome_message && welcome_message.length > 300) {
+      return NextResponse.json({ error: 'Welcome message must be 300 characters or less' }, { status: 400 })
+    }
+    if (seo_title && seo_title.length > 60) {
+      return NextResponse.json({ error: 'SEO title must be 60 characters or less' }, { status: 400 })
+    }
+    if (seo_description && seo_description.length > 160) {
+      return NextResponse.json({ error: 'SEO description must be 160 characters or less' }, { status: 400 })
+    }
+
+    // Validate primary_color if provided
+    if (primary_color !== undefined && !VALID_COLORS.includes(primary_color)) {
+      return NextResponse.json(
+        { error: `Invalid primary_color. Must be one of: ${VALID_COLORS.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    // Build update object with only the fields that were provided
+    const updates: Record<string, unknown> = {}
+    if (business_name       !== undefined) updates.business_name       = business_name
+    if (business_email      !== undefined) updates.business_email      = business_email
+    if (business_phone      !== undefined) updates.business_phone      = business_phone
+    if (slug                !== undefined) updates.slug                = slug
+    if (welcome_message     !== undefined) updates.welcome_message     = welcome_message
+    if (seo_title           !== undefined) updates.seo_title           = seo_title
+    if (seo_description     !== undefined) updates.seo_description     = seo_description
+    if (primary_color       !== undefined) updates.primary_color       = primary_color
+    if (new_booking_alerts  !== undefined) updates.new_booking_alerts  = new_booking_alerts
+    if (cancellation_alerts !== undefined) updates.cancellation_alerts = cancellation_alerts
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No fields provided to update' }, { status: 400 })
+    }
+
+    const { data: settings, error: dbError } = await supabase
+      .from('settings')
+      .update(updates)
+      .eq('admin_id', user.id)
+      .select('*')
+      .single()
+
+    if (dbError) {
+      // Supabase returns code 23505 for unique constraint violations (e.g. duplicate slug)
+      if (dbError.code === '23505') {
+        return NextResponse.json({ error: 'That slug is already taken' }, { status: 409 })
+      }
+      return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 })
+    }
+
+    return NextResponse.json(
+      { message: 'Settings updated successfully', settings },
+      { status: 200 }
+    )
+  } catch {
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
+  }
+}

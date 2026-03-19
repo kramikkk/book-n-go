@@ -36,40 +36,11 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 
-type Booking = {
-  ref: string
-  name: string
-  email: string
-  contact: string
-  date: string
-  timeStart: string
-  timeEnd: string
-  type: string
-  service: string
-  status: string
+import { Booking } from "@/lib/schemas"
+
+interface UpcomingTableProps {
+  bookings: Booking[]
 }
-
-const allBookings: Booking[] = [
-  { ref: "BNG-A1B2C3D4", name: "Alice Johnson", email: "alice@example.com", contact: "+639171234567", date: "2026-02-27", timeStart: "09:00 AM", timeEnd: "10:00 AM", type: "Appointment", service: "Check-up", status: "Completed" },
-  { ref: "BNG-E5F6G7H8", name: "Bob Smith", email: "bob@example.com", contact: "+639282345678", date: "2026-02-27", timeStart: "11:00 AM", timeEnd: "01:00 PM", type: "Reservation", service: "Conference Hall", status: "Pending" },
-  { ref: "BNG-I9J0K1L2", name: "Carol White", email: "carol@example.com", contact: "+639393456789", date: "2026-02-28", timeStart: "02:00 PM", timeEnd: "03:00 PM", type: "Appointment", service: "Consultation", status: "Completed" },
-  { ref: "BNG-M3N4O5P6", name: "David Lee", email: "david@example.com", contact: "+639154567890", date: "2026-03-01", timeStart: "10:00 AM", timeEnd: "12:00 PM", type: "Reservation", service: "Event Place", status: "Pending" },
-  { ref: "BNG-Q7R8S9T0", name: "Eva Martinez", email: "eva@example.com", contact: "+639265678901", date: "2026-03-02", timeStart: "03:00 PM", timeEnd: "04:00 PM", type: "Appointment", service: "Follow-up", status: "Canceled" },
-  { ref: "BNG-U1V2W3X4", name: "Franco Reyes", email: "franco@example.com", contact: "+639176789012", date: "2026-03-03", timeStart: "08:00 AM", timeEnd: "09:00 AM", type: "Reservation", service: "Room", status: "Completed" },
-  { ref: "BNG-Y5Z6A7B8", name: "Grace Santos", email: "grace@example.com", contact: "+639287890123", date: "2026-03-03", timeStart: "01:00 PM", timeEnd: "02:00 PM", type: "Appointment", service: "Meeting", status: "Pending" },
-  { ref: "BNG-C9D0E1F2", name: "Henry Cruz", email: "henry@example.com", contact: "+639398901234", date: "2026-03-04", timeStart: "10:00 AM", timeEnd: "11:00 AM", type: "Reservation", service: "Table", status: "Completed" },
-  { ref: "BNG-G3H4I5J6", name: "Isabel Flores", email: "isabel@example.com", contact: "+639159012345", date: "2026-03-04", timeStart: "02:00 PM", timeEnd: "03:00 PM", type: "Appointment", service: "Check-up", status: "Canceled" },
-  { ref: "BNG-K7L8M9N0", name: "Jose Dela Cruz", email: "jose@example.com", contact: "+639260123456", date: "2026-03-05", timeStart: "09:00 AM", timeEnd: "11:00 AM", type: "Reservation", service: "Conference Hall", status: "Pending" },
-  { ref: "BNG-O1P2Q3R4", name: "Karen Mendoza", email: "karen@example.com", contact: "+639171234568", date: "2026-03-05", timeStart: "11:00 AM", timeEnd: "12:00 PM", type: "Appointment", service: "Consultation", status: "Completed" },
-  { ref: "BNG-S5T6U7V8", name: "Luis Garcia", email: "luis@example.com", contact: "+639282345679", date: "2026-03-06", timeStart: "03:00 PM", timeEnd: "05:00 PM", type: "Reservation", service: "Event Place", status: "Pending" },
-  { ref: "BNG-W9X0Y1Z2", name: "Maria Torres", email: "maria@example.com", contact: "+639393456780", date: "2026-03-07", timeStart: "08:00 AM", timeEnd: "09:00 AM", type: "Appointment", service: "Follow-up", status: "Completed" },
-  { ref: "BNG-A3B4C5D6", name: "Nathan Aquino", email: "nathan@example.com", contact: "+639154567891", date: "2026-03-07", timeStart: "01:00 PM", timeEnd: "03:00 PM", type: "Reservation", service: "Room", status: "Canceled" },
-  { ref: "BNG-E7F8G9H0", name: "Olivia Ramos", email: "olivia@example.com", contact: "+639265678902", date: "2026-03-08", timeStart: "10:00 AM", timeEnd: "11:00 AM", type: "Appointment", service: "Meeting", status: "Pending" },
-]
-
-const upcomingBookings = allBookings
-  .filter((b) => b.status === "Pending")
-  .sort((a, b) => new Date(`${a.date} ${a.timeStart}`).getTime() - new Date(`${b.date} ${b.timeStart}`).getTime())
 
 const statusClass: Record<string, string> = {
   Pending: "border-yellow-500 text-yellow-600",
@@ -124,6 +95,9 @@ const columns: ColumnDef<Booking>[] = [
       <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
         Date <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
+    ),
+    cell: ({ row }) => (
+      <span>{row.original.date.toLocaleDateString("default", { month: "short", day: "numeric", year: "numeric" })}</span>
     ),
   },
   {
@@ -183,11 +157,17 @@ const columns: ColumnDef<Booking>[] = [
   },
 ]
 
-export function UpcomingTable() {
+export function UpcomingTable({ bookings }: UpcomingTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({ email: false, contact: false })
   const [rowSelection, setRowSelection] = React.useState({})
+
+  const upcomingBookings = React.useMemo(() => {
+    return bookings
+      .filter((b) => b.status === "Pending")
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [bookings])
 
   const table = useReactTable({
     data: upcomingBookings,

@@ -23,7 +23,7 @@ export async function GET() {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.user_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const { data, error } = await supabase
       .from('services')
@@ -36,7 +36,6 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch services' }, { status: 500 })
     }
 
-    // Group by type so the frontend can directly feed each tab
     const services = {
       appointment: (data ?? []).filter((s) => s.type === 'appointment'),
       reservation: (data ?? []).filter((s) => s.type === 'reservation'),
@@ -63,7 +62,7 @@ export async function POST(request: Request) {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.user_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const { type, label, description } = await request.json()
 

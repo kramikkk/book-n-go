@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-// Routes that don't require authentication
 const PUBLIC_ROUTES = ['/login', '/register']
 
 // Routes that start with these prefixes are also public (business landing pages)
@@ -68,8 +67,8 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Read role from user_metadata — set during registration, no DB query needed
-  const role = user.user_metadata?.role
+  
+  const role = user.app_metadata?.role
 
   // Admin routes — only admins allowed
   if (pathname.startsWith('/admin') && role !== 'admin') {

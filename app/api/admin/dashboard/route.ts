@@ -1,30 +1,44 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextResponse }  from 'next/server'
+
 import { buildStats }    from './stats'
 import { buildBarChart } from './bar-chart'
 import { buildPieChart } from './pie-chart'
-import type { BookingRow, BookingStatus, BookingType, DashboardData, RawRow } from './types'
+import type { RawRow, BookingRow, DashboardData } from './types'
 
 // ─── GET /api/admin/dashboard ─────────────────────────────────────────────────
-// Returns all data needed for the admin dashboard in one request.
+// Returns all data needed to render the dashboard in a single request:
+//   stats    — total / pending / completed / canceled counts
+//   barChart — booking counts grouped by day / month / year
+//   pieChart — status distribution per booking type
+//   upcoming — next 10 pending bookings (soonest first)
+//
+// Query params (optional):
+//   tz  IANA timezone string used to compute "current week / year".
+//       Falls back to 'UTC' if omitted or invalid.
 //
 // Response 200:
-//   {
-//     stats:    { total, pending, completed, canceled },
-//     barChart: { daily, monthly, yearly },
-//     pieChart: { reservation, appointment },
-//     upcoming: BookingRow[]  (pending only, max 10, sorted by date asc)
-//   }
+//   { stats, barChart, pieChart, upcoming }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.user_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!user)                                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
-    const { data, error } = await supabase
+    // Validate timezone — fall back to UTC rather than crashing
+    const rawTz = new URL(request.url).searchParams.get('tz') ?? 'UTC'
+    let tz = 'UTC'
+    try {
+      Intl.DateTimeFormat(undefined, { timeZone: rawTz })
+      tz = rawTz
+    } catch {
+      // invalid tz string — silently fall back to UTC
+    }
+
+    const { data, error: dbError } = await supabase
       .from('bookings')
       .select(`
         id,
@@ -36,28 +50,27 @@ export async function GET() {
         type,
         status,
         created_at,
-        services ( label ),
         profiles!bookings_customer_id_fkey ( id, first_name, last_name, email )
       `)
       .eq('admin_id', user.id)
-      .order('date', { ascending: true })
+      .order('date',       { ascending: true })
       .order('time_start', { ascending: true })
 
-    if (error) {
-      return NextResponse.json({ error: 'Failed to fetch bookings' }, { status: 500 })
+    if (dbError) {
+      return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 })
     }
 
-    // Normalise Supabase join shape (joins come back as arrays)
-    const rows: BookingRow[] = (data ?? [] as RawRow[]).map((b: RawRow) => ({
+    // Normalise the Supabase join shape (arrays → single objects)
+    const rows: BookingRow[] = ((data ?? []) as RawRow[]).map((b: RawRow) => ({
       id:         b.id,
       name:       b.name,
       contact:    b.contact,
       date:       b.date,
       time_start: b.time_start,
       time_end:   b.time_end,
-      type:       b.type   as BookingType,
-      status:     b.status as BookingStatus,
-      service:    b.services[0]?.label ?? null,
+      type:       b.type as BookingRow['type'],
+      status:     b.status as BookingRow['status'],
+      service:    null,
       created_at: b.created_at,
       customer:   b.profiles[0]
         ? {
@@ -69,14 +82,20 @@ export async function GET() {
         : null,
     }))
 
-    const dashboardData: DashboardData = {
+    // Upcoming: next 10 pending bookings from today onward.
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date())
+    const upcoming = rows
+      .filter((b) => b.status === 'Pending' && b.date >= todayStr)
+      .slice(0, 10)
+
+    const payload: DashboardData = {
       stats:    buildStats(rows),
-      barChart: buildBarChart(rows),
+      barChart: buildBarChart(rows, tz),
       pieChart: buildPieChart(rows),
-      upcoming: rows.filter((b) => b.status === 'Pending').slice(0, 10),
+      upcoming,
     }
 
-    return NextResponse.json(dashboardData, { status: 200 })
+    return NextResponse.json(payload, { status: 200 })
   } catch {
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }

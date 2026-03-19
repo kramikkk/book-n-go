@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextResponse }  from 'next/server'
 
 const VALID_COLORS = ['blue', 'indigo', 'purple', 'rose', 'orange', 'green', 'teal']
 
@@ -7,28 +7,21 @@ const VALID_COLORS = ['blue', 'indigo', 'purple', 'rose', 'orange', 'green', 'te
 // Returns the admin's current settings row.
 //
 // Response 200:
-//   { settings: Settings }
-//
-// Settings shape:
-//   id, admin_id,
-//   business_name, business_email, business_phone, logo_url,
-//   slug, welcome_message, seo_title, seo_description,
-//   primary_color,
-//   new_booking_alerts, cancellation_alerts
+//   { settings: Settings | null }
 
 export async function GET() {
   try {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.user_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!user)                               return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
     const { data: settings, error } = await supabase
       .from('settings')
       .select('*')
       .eq('admin_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (error) {
       return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 })
@@ -46,9 +39,7 @@ export async function GET() {
 //
 // Request body (all optional):
 //   business_name        string
-//   business_email       string
-//   business_phone       string
-//   slug                 string   (must be unique, lowercase, letters/numbers/hyphens only)
+//   slug                 string   (3–50 chars, lowercase letters/numbers/hyphens only)
 //   welcome_message      string   (max 300 chars)
 //   seo_title            string   (max 60 chars)
 //   seo_description      string   (max 160 chars)
@@ -64,15 +55,13 @@ export async function PATCH(request: Request) {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.user_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!user)                               return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
     const body = await request.json()
 
     const {
       business_name,
-      business_email,
-      business_phone,
       slug,
       welcome_message,
       seo_title,
@@ -82,7 +71,7 @@ export async function PATCH(request: Request) {
       cancellation_alerts,
     } = body
 
-    // Validate slug format if provided
+    // ── Slug ──
     if (slug !== undefined) {
       if (typeof slug !== 'string' || !/^[a-z0-9-]+$/.test(slug) || slug.length < 3 || slug.length > 50) {
         return NextResponse.json(
@@ -92,7 +81,7 @@ export async function PATCH(request: Request) {
       }
     }
 
-    // Validate field lengths if provided
+    // ── String length limits ──
     if (welcome_message && welcome_message.length > 300) {
       return NextResponse.json({ error: 'Welcome message must be 300 characters or less' }, { status: 400 })
     }
@@ -103,7 +92,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'SEO description must be 160 characters or less' }, { status: 400 })
     }
 
-    // Validate primary_color if provided
+    // ── primary_color ──
     if (primary_color !== undefined && !VALID_COLORS.includes(primary_color)) {
       return NextResponse.json(
         { error: `Invalid primary_color. Must be one of: ${VALID_COLORS.join(', ')}` },
@@ -111,11 +100,16 @@ export async function PATCH(request: Request) {
       )
     }
 
+    if (new_booking_alerts !== undefined && typeof new_booking_alerts !== 'boolean') {
+      return NextResponse.json({ error: 'new_booking_alerts must be a boolean' }, { status: 400 })
+    }
+    if (cancellation_alerts !== undefined && typeof cancellation_alerts !== 'boolean') {
+      return NextResponse.json({ error: 'cancellation_alerts must be a boolean' }, { status: 400 })
+    }
+
     // Build update object with only the fields that were provided
     const updates: Record<string, unknown> = {}
     if (business_name       !== undefined) updates.business_name       = business_name
-    if (business_email      !== undefined) updates.business_email      = business_email
-    if (business_phone      !== undefined) updates.business_phone      = business_phone
     if (slug                !== undefined) updates.slug                = slug
     if (welcome_message     !== undefined) updates.welcome_message     = welcome_message
     if (seo_title           !== undefined) updates.seo_title           = seo_title
@@ -130,13 +124,11 @@ export async function PATCH(request: Request) {
 
     const { data: settings, error: dbError } = await supabase
       .from('settings')
-      .update(updates)
-      .eq('admin_id', user.id)
+      .upsert({ admin_id: user.id, ...updates }, { onConflict: 'admin_id' })
       .select('*')
       .single()
 
     if (dbError) {
-      // Supabase returns code 23505 for unique constraint violations (e.g. duplicate slug)
       if (dbError.code === '23505') {
         return NextResponse.json({ error: 'That slug is already taken' }, { status: 409 })
       }

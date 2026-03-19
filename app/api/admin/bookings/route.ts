@@ -1,13 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextResponse }  from 'next/server'
 
-// ─── Auth helper ─────────────────────────────────────────────────────────────
+// ─── Auth helper ──────────────────────────────────────────────────────────────
 
 async function requireAdmin() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Unauthorized', status: 401, supabase, user: null }
-  if (user.user_metadata?.role !== 'admin') return { error: 'Forbidden', status: 403, supabase, user: null }
+  if (!user)                                return { error: 'Unauthorized', status: 401, supabase, user: null }
+  if (user.app_metadata?.role !== 'admin') return { error: 'Forbidden',    status: 403, supabase, user: null }
   return { error: null, status: 200, supabase, user }
 }
 
@@ -21,9 +21,8 @@ type RawBookingRow = {
   time_end:   string
   type:       string
   status:     string
-  price:      number
   created_at: string
-  services:   { id: string; label: string }[]
+  service_id: string | null
   profiles:   { id: string; first_name: string | null; last_name: string | null; email: string | null }[]
 }
 
@@ -33,18 +32,15 @@ type RawBookingRow = {
 // Query params (all optional):
 //   status   = Pending | Completed | Canceled
 //   type     = Appointment | Reservation
-//   date     = YYYY-MM-DD  (exact date filter)
-//   from     = YYYY-MM-DD  (date range start, inclusive)
-//   to       = YYYY-MM-DD  (date range end, inclusive)
+//   date     = YYYY-MM-DD  (exact date — mutually exclusive with from/to)
+//   from     = YYYY-MM-DD  (range start, inclusive — ignored when date is set)
+//   to       = YYYY-MM-DD  (range end,   inclusive — ignored when date is set)
+//
+// Passing both `date` and `from`/`to` returns a 400 to prevent silent
+// over-filtering that would yield zero results.
 //
 // Response 200:
 //   { bookings: Booking[] }
-//
-// Each Booking:
-//   id, name, contact, date, time_start, time_end, type, status,
-//   price, created_at,
-//   service: { id, label } | null,
-//   customer: { id, first_name, last_name, email } | null
 
 export async function GET(request: Request) {
   try {
@@ -58,6 +54,15 @@ export async function GET(request: Request) {
     const filterFrom   = searchParams.get('from')
     const filterTo     = searchParams.get('to')
 
+    // Reject conflicting date filters early instead of silently stacking them
+    // (which almost always returns zero rows and is very hard to debug).
+    if (filterDate && (filterFrom || filterTo)) {
+      return NextResponse.json(
+        { error: 'Use either `date` or `from`/`to`, not both' },
+        { status: 400 }
+      )
+    }
+
     let query = supabase
       .from('bookings')
       .select(`
@@ -69,20 +74,19 @@ export async function GET(request: Request) {
         time_end,
         type,
         status,
-        price,
+        service_id,
         created_at,
-        services ( id, label ),
         profiles!bookings_customer_id_fkey ( id, first_name, last_name, email )
       `)
       .eq('admin_id', user!.id)
-      .order('date', { ascending: false })
+      .order('date',       { ascending: false })
       .order('time_start', { ascending: false })
 
     if (filterStatus) query = query.eq('status', filterStatus)
-    if (filterType)   query = query.eq('type', filterType)
-    if (filterDate)   query = query.eq('date', filterDate)
-    if (filterFrom)   query = query.gte('date', filterFrom)
-    if (filterTo)     query = query.lte('date', filterTo)
+    if (filterType)   query = query.eq('type',   filterType)
+    if (filterDate)   query = query.eq('date',   filterDate)
+    if (!filterDate && filterFrom) query = query.gte('date', filterFrom)
+    if (!filterDate && filterTo)   query = query.lte('date', filterTo)
 
     const { data, error: dbError } = await query
 
@@ -90,8 +94,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to fetch bookings' }, { status: 500 })
     }
 
-    // Normalise join shape
-    const bookings = (data ?? [] as RawBookingRow[]).map((b: RawBookingRow) => ({
+    const bookings = ((data ?? []) as RawBookingRow[]).map((b: RawBookingRow) => ({
       id:         b.id,
       name:       b.name,
       contact:    b.contact,
@@ -100,11 +103,14 @@ export async function GET(request: Request) {
       time_end:   b.time_end,
       type:       b.type,
       status:     b.status,
-      price:      b.price,
+      service_id: b.service_id,
       created_at: b.created_at,
-      service:   b.services[0]  ? { id: b.services[0].id,  label: b.services[0].label }  : null,
-      customer:  b.profiles[0]  ? { id: b.profiles[0].id,  first_name: b.profiles[0].first_name,
-                                     last_name: b.profiles[0].last_name, email: b.profiles[0].email } : null,
+      customer: b.profiles[0] ? {
+        id:         b.profiles[0].id,
+        first_name: b.profiles[0].first_name,
+        last_name:  b.profiles[0].last_name,
+        email:      b.profiles[0].email,
+      } : null,
     }))
 
     return NextResponse.json({ bookings }, { status: 200 })

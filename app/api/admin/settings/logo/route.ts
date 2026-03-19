@@ -15,19 +15,26 @@ import { NextResponse } from 'next/server'
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif']
 const MAX_SIZE      = 2 * 1024 * 1024 // 2MB
 
+// Extension is derived from the validated MIME type, NOT from the filename,
+// so a user can't spoof the extension by naming their file e.g. "evil.php".
+const MIME_TO_EXT: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png':  'png',
+  'image/gif':  'gif',
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.user_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!user)                                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
     const formData     = await request.formData()
     const file         = formData.get('logo') as File | null
     const businessName = formData.get('business_name') as string | null
 
-    // ── Validate file ──
     if (!file) {
       return NextResponse.json({ error: 'No logo file provided' }, { status: 400 })
     }
@@ -46,9 +53,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Upload to Supabase Storage ──
-    // Each admin gets their own folder: logos/{admin_id}/logo.{ext}
-    const fileExt  = file.name.split('.').pop()
+    const fileExt  = MIME_TO_EXT[file.type]
     const fileName = `${user.id}/logo.${fileExt}`
     const buffer   = await file.arrayBuffer()
 
@@ -56,23 +61,17 @@ export async function POST(request: Request) {
       .from('logos')
       .upload(fileName, buffer, {
         contentType: file.type,
-        upsert: true, // overwrite previous logo
+        upsert: true,
       })
 
     if (uploadError) {
-      return NextResponse.json(
-        { error: 'Failed to upload logo' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to upload logo' }, { status: 500 })
     }
 
-    // ── Get the public URL ──
     const { data: { publicUrl } } = supabase.storage
       .from('logos')
       .getPublicUrl(fileName)
 
-    // ── Update settings row ──
-    // Always update logo_url; also update business_name if it was provided
     const updates: Record<string, string> = { logo_url: publicUrl }
     if (businessName && businessName.trim().length > 0) {
       updates.business_name = businessName.trim()
@@ -80,8 +79,7 @@ export async function POST(request: Request) {
 
     const { error: settingsError } = await supabase
       .from('settings')
-      .update(updates)
-      .eq('admin_id', user.id)
+      .upsert({ admin_id: user.id, ...updates }, { onConflict: 'admin_id' })
 
     if (settingsError) {
       return NextResponse.json(
@@ -110,20 +108,19 @@ export async function DELETE() {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.user_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!user)                                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
-    // Try to remove all common extensions — we don't know which one was uploaded
-    const extensions = ['jpg', 'jpeg', 'png', 'gif']
-    const paths = extensions.map((ext) => `${user.id}/logo.${ext}`)
-
+    // FIX: derive paths from MIME_TO_EXT instead of a hand-written extensions
+    // list. The old list included 'jpeg' which was never written by the upload
+    // (which always uses 'jpg'), and would silently diverge if MIME_TO_EXT
+    // were ever updated.
+    const paths = Object.values(MIME_TO_EXT).map((ext) => `${user.id}/logo.${ext}`)
     await supabase.storage.from('logos').remove(paths)
 
-    // Clear logo_url in settings regardless of whether a file existed
     const { error: settingsError } = await supabase
       .from('settings')
-      .update({ logo_url: null })
-      .eq('admin_id', user.id)
+      .upsert({ admin_id: user.id, logo_url: null }, { onConflict: 'admin_id' })
 
     if (settingsError) {
       return NextResponse.json(

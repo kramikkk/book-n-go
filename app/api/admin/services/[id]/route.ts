@@ -1,24 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextResponse }  from 'next/server'
 
 // ─── PATCH /api/admin/services/[id] ──────────────────────────────────────────
 // Updates the label and/or description of a single service.
-// Also handles sort_order updates for drag-and-drop reordering:
-// send the full ordered array of IDs for that type and all rows
-// will be updated in a single call.
+// For drag-and-drop reordering, send orderedIds in the request body.
 //
-// Request body (use one mode at a time):
-//
-//   Mode A — edit label/description:
-//     { label?: string, description?: string }
-//
-//   Mode B — reorder (drag and drop):
-//     { orderedIds: string[] }
-//     All IDs must belong to this admin. Each ID gets sort_order = its index.
+// Request body (mutually exclusive):
+//   { label?: string, description?: string }
+//   { orderedIds: string[] }
 //
 // Response 200:
-//   { message: string, service: Service }   (Mode A)
-//   { message: string }                      (Mode B)
+//   { message: string, service: Service }
 
 export async function PATCH(
   request: Request,
@@ -28,37 +20,39 @@ export async function PATCH(
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.user_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!user)                               return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
-    const { id } = await params
-    const body = await request.json()
+    const { id }                             = await params
+    const body                               = await request.json()
     const { label, description, orderedIds } = body
 
-    // ── Mode B: reorder ──
+    // ── Reorder branch ──
     if (orderedIds !== undefined) {
       if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
-        return NextResponse.json({ error: 'orderedIds must be a non-empty array' }, { status: 400 })
+        return NextResponse.json(
+          { error: 'orderedIds must be a non-empty array' },
+          { status: 400 }
+        )
       }
 
-      // Update each service's sort_order based on its position in the array
-      const updates = orderedIds.map((serviceId: string, index: number) =>
-        supabase
-          .from('services')
-          .update({ sort_order: index })
-          .eq('id', serviceId)
-          .eq('admin_id', user.id) // safety: admin can only reorder their own
+      await Promise.all(
+        orderedIds.map((sid: string, index: number) =>
+          supabase
+            .from('services')
+            .update({ sort_order: index })
+            .eq('id', sid)
+            .eq('admin_id', user.id)
+        )
       )
-
-      await Promise.all(updates)
 
       return NextResponse.json({ message: 'Services reordered successfully' }, { status: 200 })
     }
 
-    // ── Mode A: edit label/description ──
+    // ── Label / description branch ──
     if (label === undefined && description === undefined) {
       return NextResponse.json(
-        { error: 'Provide at least one field to update: label, description, or orderedIds' },
+        { error: 'Provide at least one field to update: label or description' },
         { status: 400 }
       )
     }
@@ -110,22 +104,33 @@ export async function DELETE(
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.user_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!user)                               return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
     const { id } = await params
 
-    const { error: dbError } = await supabase
+    const { data: existing, error: fetchError } = await supabase
+      .from('services')
+      .select('id')
+      .eq('id', id)
+      .eq('admin_id', user.id)
+      .single()
+
+    if (fetchError || !existing) {
+      return NextResponse.json(
+        { error: 'Service not found or you do not have permission to delete it' },
+        { status: 404 }
+      )
+    }
+
+    const { error: deleteError } = await supabase
       .from('services')
       .delete()
       .eq('id', id)
       .eq('admin_id', user.id)
 
-    if (dbError) {
-      return NextResponse.json(
-        { error: 'Service not found or you do not have permission to delete it' },
-        { status: 404 }
-      )
+    if (deleteError) {
+      return NextResponse.json({ error: 'Failed to delete service' }, { status: 500 })
     }
 
     return NextResponse.json({ message: 'Service deleted successfully' }, { status: 200 })

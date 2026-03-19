@@ -1,13 +1,25 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+// ─── POST /api/auth/login ─────────────────────────────────────────────────────
+// Signs in an existing user.
+//
+// Request body:
+//   { email: string, password: string }
+//
+// Response 200:
+//   { message: string, user: Profile }
+
 export async function POST(request: Request) {
   try {
-    // Get email and password from the login form
     const { email, password } = await request.json()
 
-    // Validate required fields
-    if (!email || !password) {
+    // FIX: trim email before validation and sign-in — a trailing space would
+    // pass the truthiness check but cause a "Invalid email or password" error
+    // that is frustrating to debug.
+    const trimmedEmail = email?.trim()
+
+    if (!trimmedEmail || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
         { status: 400 }
@@ -16,9 +28,8 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
-    // Sign in with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
+      email:    trimmedEmail,
       password,
     })
 
@@ -29,7 +40,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Fetch the user's profile to get their role
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('id, first_name, last_name, email, role, avatar_url')
@@ -43,15 +53,10 @@ export async function POST(request: Request) {
       )
     }
 
-
     return NextResponse.json(
-      {
-        message: 'Logged in successfully',
-        user: profile,
-      },
+      { message: 'Logged in successfully', user: profile },
       { status: 200 }
     )
-
   } catch {
     return NextResponse.json(
       { error: 'Something went wrong' },

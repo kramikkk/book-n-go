@@ -1,32 +1,25 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextResponse }  from 'next/server'
+import { requireAdmin } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
 
-import { buildStats }    from './stats'
+import { buildStats } from './stats'
 import { buildBarChart } from './bar-chart'
 import { buildPieChart } from './pie-chart'
 import type { RawRow, BookingRow, DashboardData } from './types'
 
 // ─── GET /api/admin/dashboard ─────────────────────────────────────────────────
-// Returns all data needed to render the dashboard in a single request:
-//   stats    — total / pending / completed / canceled counts
-//   barChart — booking counts grouped by day / month / year
-//   pieChart — status distribution per booking type
-//   upcoming — next 10 pending bookings (soonest first)
-//
-// Query params (optional):
-//   tz  IANA timezone string used to compute "current week / year".
-//       Falls back to 'UTC' if omitted or invalid.
-//
-// Response 200:
-//   { stats, barChart, pieChart, upcoming }
+// Returns all data needed to render the dashboard in a single request.
+// Limits search to the last 12 months for scalability.
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createClient()
+    const { error, status, supabase, user } = await requireAdmin()
+    if (error) return NextResponse.json({ error }, { status })
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user)                                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
+    // Scale optimization: only fetch bookings from the last 12 months to prevent
+    // performance degradation as history grows.
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    const dateLimit = oneYearAgo.toISOString().split('T')[0]
 
     // Validate timezone — fall back to UTC rather than crashing
     const rawTz = new URL(request.url).searchParams.get('tz') ?? 'UTC'
@@ -52,7 +45,8 @@ export async function GET(request: Request) {
         created_at,
         profiles!bookings_customer_id_fkey ( id, first_name, last_name, email )
       `)
-      .eq('admin_id', user.id)
+      .eq('admin_id', user!.id)
+      .gte('date', dateLimit)
       .order('date',       { ascending: true })
       .order('time_start', { ascending: true })
 

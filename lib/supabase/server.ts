@@ -23,3 +23,18 @@ export async function createClient() {
     }
   )
 }
+
+export async function requireAdmin() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    return { error: 'Unauthorized', status: 401, supabase, user: null }
+  }
+  
+  if (user.app_metadata?.role !== 'admin') {
+    return { error: 'Forbidden', status: 403, supabase, user: null }
+  }
+  
+  return { error: null, status: 200, supabase, user }
+}

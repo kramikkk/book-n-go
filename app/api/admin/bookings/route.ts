@@ -1,15 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextResponse }  from 'next/server'
-
-// ─── Auth helper ──────────────────────────────────────────────────────────────
-
-async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user)                                return { error: 'Unauthorized', status: 401, supabase, user: null }
-  if (user.app_metadata?.role !== 'admin') return { error: 'Forbidden',    status: 403, supabase, user: null }
-  return { error: null, status: 200, supabase, user }
-}
+import { requireAdmin } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
 
 // Supabase returns joined tables as arrays, not single objects
 type RawBookingRow = {

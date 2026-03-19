@@ -48,6 +48,7 @@ const statusClass: Record<string, string> = {
   Completed: "border-green-500 text-green-600",
   Pending: "border-yellow-500 text-yellow-600",
   Canceled: "border-red-500 text-red-600",
+  Confirmed: "border-blue-500 text-blue-600",
 }
 
 const columns: ColumnDef<Booking>[] = [

@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form } from "@/components/ui/form"
 import { TIME_SLOTS } from "@/lib/booking-constants"
-import { MOCK_BOOKED_DATES, MOCK_BOOKED_SLOTS } from "@/lib/mock-data"
 import { DEFAULT_SERVICES, getServicesConfig, type ServicesConfig } from "@/lib/services-config"
 import { getUserProfile, type UserProfile } from "@/lib/user-profile"
 import {
@@ -49,6 +48,9 @@ export default function BookNowPage() {
   const [servicesConfig, setServicesConfig] = React.useState<ServicesConfig>(DEFAULT_SERVICES)
   const [profile, setProfile] = React.useState<UserProfile | null>(null)
 
+  const [bookedSlots, setBookedSlots] = React.useState<string[]>([])
+  const [fullyBookedDates, setFullyBookedDates] = React.useState<Date[]>([])
+
   const form = useForm<BookingFormData>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
@@ -78,6 +80,34 @@ export default function BookNowPage() {
       form.setValue("phone", p.phone)
     }
   }, [form])
+
+  React.useEffect(() => {
+    async function fetchAvailability() {
+      try {
+        let url = `/api/bookings/availability?slug=${slug}`
+        if (formDate) {
+          // Send local date string
+          const offsetDate = new Date(formDate.getTime() - (formDate.getTimezoneOffset() * 60000))
+          url += `&date=${offsetDate.toISOString().split('T')[0]}`
+        }
+        const res = await fetch(url)
+        if (res.ok) {
+          const data = await res.json()
+          setBookedSlots(data.bookedSlots || [])
+          setFullyBookedDates(
+            (data.fullyBookedDates || []).map((d: string) => {
+              // Parse date string (YYYY-MM-DD) carefully to avoid timezone shifting
+              const [year, month, day] = d.split('-').map(Number)
+              return new Date(year, month - 1, day)
+            })
+          )
+        }
+      } catch (err) {
+        console.error("Failed to fetch availability:", err)
+      }
+    }
+    fetchAvailability()
+  }, [slug, formDate])
 
   // Reset selected service when booking type changes
   React.useEffect(() => {
@@ -149,8 +179,8 @@ export default function BookNowPage() {
               startTime={formStartTime || null}
               endTime={formEndTime || null}
               bookingType={formBookingType}
-              bookedSlots={MOCK_BOOKED_SLOTS}
-              fullyBookedDates={MOCK_BOOKED_DATES}
+              bookedSlots={bookedSlots}
+              fullyBookedDates={fullyBookedDates}
               onDateChange={(date) => {
                 if (date) form.setValue("date", date, { shouldValidate: true })
               }}

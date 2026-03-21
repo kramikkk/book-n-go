@@ -144,6 +144,7 @@ export default function BookNowPage() {
           {/* Step 1 — Date, Time & Booking Type */}
           {step === 1 && (
             <BookingCalendar
+              key={calendarKey}
               date={formDate}
               startTime={formStartTime || null}
               endTime={formEndTime || null}

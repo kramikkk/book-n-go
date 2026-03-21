@@ -31,7 +31,7 @@ export const bookingFormSchema = z.object({
     message: "Please select an end time.",
   }),
   bookingType: bookingTypeSchema,
-  service: z.string().optional(),
+  service: z.string().min(1, "Please select a service."),
   fullName: z.string().min(2, "Name must be at least 2 characters."),
   email: z.string().email("Please enter a valid email address."),
   phone: z.string().min(10, "Please enter a valid phone number."),

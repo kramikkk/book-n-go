@@ -3,6 +3,8 @@
 import * as React from "react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
+import { format } from "date-fns"
+import { toast } from "sonner"
 import { BookingCalendar } from "@/components/booking-calendar"
 import { BookingSteps } from "@/components/booking-steps"
 import { ServiceSelector } from "@/components/service-selector"
@@ -46,11 +48,37 @@ export default function BookNowPage() {
   const [selectedService, setSelectedService] = React.useState<string | null>(null)
   const [servicesConfig, setServicesConfig] = React.useState<ServicesConfig>(DEFAULT_SERVICES)
   const [profile, setProfile] = React.useState<UserProfile | null>(null)
+  const [bookedSlots, setBookedSlots] = React.useState<string[]>([])
+  const [fullyBookedDates, setFullyBookedDates] = React.useState<string[]>([])
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   React.useEffect(() => {
     setServicesConfig(getServicesConfig())
     setProfile(getUserProfile())
-  }, [])
+    // Fetch fully booked dates for the next 30 days
+    fetch(`/api/slug/availability?slug=${encodeURIComponent(slug)}`)
+      .then((r) => r.json())
+      .then(({ fullyBookedDates }) => {
+        if (Array.isArray(fullyBookedDates)) {
+          setFullyBookedDates(fullyBookedDates)
+        }
+      })
+      .catch(() => {/* non-critical: calendar simply won't pre-block dates */})
+  }, [slug])
+
+  React.useEffect(() => {
+    if (!bookingData.date) {
+      setBookedSlots([])
+      return
+    }
+    const dateStr = format(bookingData.date, "yyyy-MM-dd")
+    fetch(`/api/slug/availability?slug=${encodeURIComponent(slug)}&date=${dateStr}`)
+      .then((r) => r.json())
+      .then(({ bookedSlots }) => {
+        if (Array.isArray(bookedSlots)) setBookedSlots(bookedSlots)
+      })
+      .catch(() => setBookedSlots([]))
+  }, [bookingData.date, slug])
 
   // Reset selected service when booking type changes
   React.useEffect(() => {
@@ -79,39 +107,40 @@ export default function BookNowPage() {
 
   const handleConfirmBooking = async () => {
     if (!bookingData.date || !bookingData.startTime || !bookingData.endTime || !profile) return
+    setIsSubmitting(true)
 
     const ref = `BNG-${crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`
 
-    await fetch('/api/slug/bookings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        slug,
-        ref,
-        name: fullName,
-        phone: profile.phone,
-        date: bookingData.date.toISOString(),
-        startTime: bookingData.startTime,
-        endTime: bookingData.endTime,
-        serviceId: selectedService,
-        type: bookingData.bookingType,
-      }),
-    })
+    try {
+      const res = await fetch('/api/slug/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug,
+          ref,
+          name: fullName,
+          phone: profile.phone,
+          date: format(bookingData.date, "yyyy-MM-dd"),
+          startTime: bookingData.startTime,
+          endTime: bookingData.endTime,
+          serviceId: selectedService,
+          type: bookingData.bookingType,
+        }),
+      })
 
-    const params = new URLSearchParams({
-      ref,
-      issuedAt: new Date().toISOString(),
-      date: bookingData.date.toISOString(),
-      startTime: bookingData.startTime,
-      endTime: bookingData.endTime,
-      ...(duration ? { duration } : {}),
-      bookingType: bookingData.bookingType,
-      ...(selectedServiceLabel ? { service: selectedServiceLabel } : {}),
-      name: fullName,
-      email: profile.email,
-      phone: profile.phone,
-    })
-    router.push(`/${slug}/my-booking?${params.toString()}`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        toast.error((body as { error?: string }).error ?? "Failed to confirm booking. Please try again.")
+        return
+      }
+    } catch {
+      toast.error("Failed to confirm booking. Please check your connection.")
+      return
+    } finally {
+      setIsSubmitting(false)
+    }
+
+    router.push(`/${slug}/my-booking?ref=${encodeURIComponent(ref)}&slug=${encodeURIComponent(slug)}`)
   }
 
   const handleReset = () => {
@@ -134,8 +163,8 @@ export default function BookNowPage() {
             startTime={bookingData.startTime}
             endTime={bookingData.endTime}
             bookingType={bookingData.bookingType}
-            bookedSlots={[]}
-            fullyBookedDates={[]}
+            bookedSlots={bookedSlots}
+            fullyBookedDates={fullyBookedDates.map((d) => new Date(d + "T00:00:00"))}
             onDateChange={(date) => setBookingData((prev) => ({ ...prev, date }))}
             onStartTimeChange={(startTime) => setBookingData((prev) => ({ ...prev, startTime }))}
             onEndTimeChange={(endTime) => setBookingData((prev) => ({ ...prev, endTime }))}
@@ -341,8 +370,12 @@ export default function BookNowPage() {
             </Button>
           )}
           {step === 3 && (
-            <Button className="gap-2 bg-[#3A79C3] hover:bg-[#3164a8]" onClick={handleConfirmBooking}>
-              Confirm Booking
+            <Button
+              className="gap-2 bg-[#3A79C3] hover:bg-[#3164a8]"
+              onClick={handleConfirmBooking}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Confirming..." : "Confirm Booking"}
               <IconArrowRight className="size-4" />
             </Button>
           )}

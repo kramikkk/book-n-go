@@ -1,3 +1,5 @@
+import { z } from "zod"
+
 export type ServiceOption = {
   id: string
   label: string
@@ -24,14 +26,35 @@ export const DEFAULT_SERVICES: ServicesConfig = {
   ],
 }
 
+const serviceOptionSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  description: z.string().optional(),
+})
+
+const servicesConfigSchema = z.object({
+  appointment: z.array(serviceOptionSchema).optional(),
+  reservation: z.array(serviceOptionSchema).optional(),
+})
+
 const STORAGE_KEY = "bng_services_config"
 
 export function getServicesConfig(): ServicesConfig {
   if (typeof window === "undefined") return DEFAULT_SERVICES
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? (JSON.parse(stored) as ServicesConfig) : DEFAULT_SERVICES
+    if (!stored) return DEFAULT_SERVICES
+    const parsed = servicesConfigSchema.safeParse(JSON.parse(stored))
+    if (!parsed.success) {
+      localStorage.removeItem(STORAGE_KEY)
+      return DEFAULT_SERVICES
+    }
+    return {
+      appointment: parsed.data.appointment ?? DEFAULT_SERVICES.appointment,
+      reservation: parsed.data.reservation ?? DEFAULT_SERVICES.reservation,
+    }
   } catch {
+    localStorage.removeItem(STORAGE_KEY)
     return DEFAULT_SERVICES
   }
 }

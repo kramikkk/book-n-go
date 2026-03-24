@@ -23,6 +23,20 @@ export async function POST(request: Request) {
 
     const adminId = settings.admin_id;
 
+    // Validate serviceId belongs to this admin (if provided)
+    if (body.serviceId) {
+      const { data: service, error: serviceError } = await supabase
+        .from("services")
+        .select("id")
+        .eq("id", body.serviceId)
+        .eq("admin_id", adminId)
+        .maybeSingle();
+
+      if (serviceError || !service) {
+        return NextResponse.json({ error: "Invalid service" }, { status: 400 });
+      }
+    }
+
     let safeDate = body.date;
     try {
       safeDate = new Date(body.date).toISOString().split('T')[0];

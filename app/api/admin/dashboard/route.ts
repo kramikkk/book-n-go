@@ -31,24 +31,31 @@ export async function GET(request: Request) {
       // invalid tz string — silently fall back to UTC
     }
 
-    const { data, error: dbError } = await supabase
-      .from('bookings')
-      .select(`
-        id,
-        name,
-        contact,
-        date,
-        time_start,
-        time_end,
-        type,
-        status,
-        created_at,
-        profiles!bookings_customer_id_fkey ( id, first_name, last_name, email )
-      `)
-      .eq('admin_id', user!.id)
-      .gte('date', dateLimit)
-      .order('date',       { ascending: true })
-      .order('time_start', { ascending: true })
+    const [{ data, error: dbError }, { count: totalCount }] = await Promise.all([
+      supabase
+        .from('bookings')
+        .select(`
+          id,
+          name,
+          contact,
+          date,
+          time_start,
+          time_end,
+          type,
+          status,
+          created_at,
+          profiles!bookings_customer_id_fkey ( id, first_name, last_name, email )
+        `)
+        .eq('admin_id', user!.id)
+        .gte('date', dateLimit)
+        .order('date',       { ascending: true })
+        .order('time_start', { ascending: true }),
+      // All-time total (unfiltered) for the stats total card
+      supabase
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
+        .eq('admin_id', user!.id),
+    ])
 
     if (dbError) {
       return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 })
@@ -82,8 +89,11 @@ export async function GET(request: Request) {
       .filter((b) => b.status === 'Pending' && b.date >= todayStr)
       .slice(0, 10)
 
+    const stats = buildStats(rows)
+    stats.total = totalCount ?? stats.total
+
     const payload: DashboardData = {
-      stats:    buildStats(rows),
+      stats,
       barChart: buildBarChart(rows, tz),
       pieChart: buildPieChart(rows),
       upcoming,

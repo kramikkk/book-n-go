@@ -58,7 +58,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ChartPie() {
+export function ChartPie({ data: _data }: { data?: unknown } = {}) {
   const [filter, setFilter] = React.useState<"reservation" | "appointment">("reservation")
 
   const chartData = allChartData[filter]

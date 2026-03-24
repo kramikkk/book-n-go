@@ -6,14 +6,14 @@ export async function GET(request: Request) {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const phone = searchParams.get("phone");
+    const ref = searchParams.get("ref");
     const slug = searchParams.get("slug");
-
-    if (!phone) {
-      return NextResponse.json({ error: "Phone required" }, { status: 400 });
-    }
 
     if (!slug) {
       return NextResponse.json({ error: "slug required" }, { status: 400 });
+    }
+    if (!phone && !ref) {
+      return NextResponse.json({ error: "phone or ref required" }, { status: 400 });
     }
 
     const { data: settings, error: settingsError } = await supabase
@@ -26,15 +26,34 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("bookings")
-      .select("*")
-      .eq("contact", phone)
+      .select("*, services(label)")
       .eq("admin_id", settings.admin_id)
-      .eq("status", "Pending")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (ref) {
+      query = supabase
+        .from("bookings")
+        .select("*, services(label)")
+        .eq("admin_id", settings.admin_id)
+        .eq("reference_number", ref)
+        .maybeSingle();
+    } else {
+      query = supabase
+        .from("bookings")
+        .select("*, services(label)")
+        .eq("admin_id", settings.admin_id)
+        .eq("contact", phone!)
+        .eq("status", "Pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });

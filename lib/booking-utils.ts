@@ -10,7 +10,7 @@ export function hasTimeConflict(startTime: string, endTime: string, bookedSlots:
 
   return bookedSlots.some((b) => {
     const bi = getSlotIndex(b);
-    return bi > startIdx && bi < endIdx;
+    return bi >= startIdx && bi <= endIdx;
   });
 }
 

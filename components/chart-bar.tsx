@@ -73,7 +73,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ChartBar() {
+export function ChartBar({ data: _data }: { data?: unknown } = {}) {
   const [period, setPeriod] = React.useState<"daily" | "monthly" | "yearly">("daily")
 
   const chartData = allChartData[period]

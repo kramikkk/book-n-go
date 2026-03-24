@@ -6,44 +6,6 @@ import { BookingReceipt, type BookingReceiptData } from "@/components/booking-re
 import { IconCalendarOff } from "@tabler/icons-react"
 import { getUserProfile } from "@/lib/user-profile"
 
-function parseReceiptData(params: URLSearchParams): BookingReceiptData | null {
-  const ref = params.get("ref")
-  const issuedAtRaw = params.get("issuedAt")
-  const dateRaw = params.get("date")
-  const startTime = params.get("startTime")
-  const endTime = params.get("endTime")
-  const name = params.get("name")
-  const email = params.get("email")
-  const phone = params.get("phone")
-
-  if (!ref || !issuedAtRaw || !dateRaw || !startTime || !endTime || !name || !email || !phone) {
-    return null
-  }
-
-  const issuedAt = new Date(issuedAtRaw)
-  const date = new Date(dateRaw)
-  if (isNaN(issuedAt.getTime()) || isNaN(date.getTime())) return null
-
-  const duration = params.get("duration") || null
-  const bookingType = params.get("bookingType") || "Appointment"
-  const service = params.get("service") || undefined
-
-  return {
-    bookingRef: ref,
-    issuedAt,
-    date,
-    startTime,
-    endTime,
-    duration,
-    location: "Main Branch",
-    bookingType,
-    service,
-    fullName: name,
-    email,
-    phone,
-  }
-}
-
 export default function MyBookingPage() {
   const { slug } = useParams<{ slug: string }>()
   const searchParams = useSearchParams()
@@ -51,15 +13,22 @@ export default function MyBookingPage() {
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
-    // First try URL params (coming from book-now flow)
-    const fromParams = parseReceiptData(searchParams)
-    if (fromParams) {
-      setData(fromParams)
-      setLoading(false)
+    const ref = searchParams.get("ref")
+
+    // Path 1: ref in URL (coming from book-now flow after 3.2 fix)
+    if (ref) {
+      fetch(`/api/slug/my-booking?ref=${encodeURIComponent(ref)}&slug=${encodeURIComponent(slug)}`)
+        .then((res) => res.json())
+        .then(({ data: booking }) => {
+          if (!booking) return
+          setData(bookingToReceiptData(booking))
+        })
+        .catch((err) => console.error("Failed to fetch booking by ref:", err))
+        .finally(() => setLoading(false))
       return
     }
 
-    // Fallback: fetch latest pending booking from Supabase
+    // Path 2: phone fallback (direct navigation to /my-booking)
     const profile = getUserProfile()
     if (!profile?.phone) {
       setLoading(false)
@@ -70,26 +39,12 @@ export default function MyBookingPage() {
       .then((res) => res.json())
       .then(({ data: booking }) => {
         if (!booking) return
-
-        const mapped: BookingReceiptData = {
-          bookingRef: booking.reference_number || booking.id,
-          issuedAt: new Date(booking.created_at),
-          date: new Date(booking.date),
-          startTime: booking.time_start,
-          endTime: booking.time_end,
-          duration: null,
-          location: "Main Branch",
-          bookingType: booking.type,
-          service: booking.service_id || undefined,
-          fullName: booking.name,
-          email: profile.email,
-          phone: booking.contact,
-        }
-        setData(mapped)
+        // Pass profile.email as fallback since it's not stored in the booking row
+        setData(bookingToReceiptData(booking, profile.email))
       })
       .catch((err) => console.error("Failed to fetch booking:", err))
       .finally(() => setLoading(false))
-  }, [])
+  }, [slug, searchParams])
 
   if (loading) {
     return (
@@ -117,4 +72,30 @@ export default function MyBookingPage() {
       </div>
     </div>
   )
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function bookingToReceiptData(booking: any, fallbackEmail?: string): BookingReceiptData {
+  // Parse date as local time (not UTC) to avoid off-by-one in UTC- timezones
+  const dateStr: string = booking.date ?? ""
+  const date = new Date(dateStr + "T00:00:00")
+
+  // services join returns { label: string } or null
+  const serviceLabel: string | undefined =
+    booking.services?.label ?? undefined
+
+  return {
+    bookingRef: booking.reference_number ?? booking.id,
+    issuedAt: new Date(booking.created_at),
+    date,
+    startTime: booking.time_start,
+    endTime: booking.time_end,
+    duration: null,
+    location: "Main Branch",
+    bookingType: booking.type,
+    service: serviceLabel,
+    fullName: booking.name,
+    email: fallbackEmail ?? "",
+    phone: booking.contact,
+  }
 }

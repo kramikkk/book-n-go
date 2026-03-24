@@ -19,6 +19,50 @@ import { Eye, EyeOff } from "lucide-react";
 export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    const fd = new FormData(e.currentTarget);
+    const firstName = fd.get("firstName") as string;
+    const lastName = fd.get("lastName") as string;
+    const phone = fd.get("phone") as string;
+    const password = fd.get("password") as string;
+    const confirmPassword = fd.get("confirmPassword") as string;
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+          password,
+          email: `${phone}@placeholder.bng`,
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setError(body.error ?? "Registration failed");
+        return;
+      }
+      // Redirect to home after successful registration
+      window.location.href = "/";
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const card = (
     <Card className="w-full max-w-sm rounded-3xl shadow-xl">
@@ -29,11 +73,12 @@ export default function SignUp() {
       </CardHeader>
 
       <CardContent className="pt-4">
-        <form>
+        <form id="signup-form" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-3">
 
             <Input
               id="firstName"
+              name="firstName"
               type="text"
               placeholder="First Name"
               required
@@ -42,6 +87,7 @@ export default function SignUp() {
 
             <Input
               id="lastName"
+              name="lastName"
               type="text"
               placeholder="Last Name"
               required
@@ -50,6 +96,7 @@ export default function SignUp() {
 
             <Input
               id="phone"
+              name="phone"
               type="tel"
               placeholder="Phone Number"
               required
@@ -60,6 +107,7 @@ export default function SignUp() {
             <div className="relative">
               <Input
                 id="password"
+                name="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 required
@@ -83,6 +131,7 @@ export default function SignUp() {
             <div className="relative">
               <Input
                 id="confirmPassword"
+                name="confirmPassword"
                 type={showConfirm ? "text" : "password"}
                 placeholder="Confirm Password"
                 required
@@ -107,11 +156,14 @@ export default function SignUp() {
       </CardContent>
 
       <CardFooter className="flex-col gap-2 pt-2">
+        {error && <p className="text-sm text-destructive text-center">{error}</p>}
         <Button
           type="submit"
+          form="signup-form"
+          disabled={isLoading}
           className="w-full text-white rounded-lg py-2 font-medium bg-gradient-to-r from-[#409689] to-[#2F46AC] hover:from-[#2F46AC] hover:to-[#409689] transition-colors duration-300"
         >
-          Sign Up
+          {isLoading ? "Creating account..." : "Sign Up"}
         </Button>
 
         <div className="w-full mt-4 pt-2">
@@ -136,7 +188,7 @@ export default function SignUp() {
         <Navbar />
 
         <div className="relative w-full min-h-screen bg-gradient-to-br from-[#2F44AD] to-[#2B9698] flex items-start pt-40">
-          
+
           <div className="w-full px-24">
             <div className="text-white max-w-lg text-left">
               <h2 className="text-[48px] font-semibold leading-tight">

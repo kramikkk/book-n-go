@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { BookingsTable } from "@/components/bookings-table"
+import { BookingsTable } from "@/components/dashboard/bookings-table"
 import { toast } from "sonner"
 
 export function BookingsClient({ initialBookings }: { initialBookings: unknown[] }) {

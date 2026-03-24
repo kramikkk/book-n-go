@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useParams, useSearchParams } from "next/navigation"
-import { BookingReceipt, type BookingReceiptData } from "@/components/booking-receipt"
+import { BookingReceipt, type BookingReceiptData } from "@/components/dashboard/booking-receipt"
 import { IconCalendarOff } from "@tabler/icons-react"
 import { getUserProfile } from "@/lib/user-profile"
 

@@ -1,11 +1,11 @@
 "use client";
 import { useState } from "react";
-import Login from "@/components/login"
-import Navbar from "@/components/Navbar"
-import FeatureCards from "@/components/FeatureCards";
-import Faqs from "@/components/Faqs";
-import AboutUs from "@/components/AboutUs";
-import Footer from "@/components/Footer";
+import Login from "@/components/landing/login"
+import Navbar from "@/components/landing/nav-bar"
+import FeatureCards from "@/components/landing/feature-cards";
+import Faqs from "@/components/landing/faqs";
+import AboutUs from "@/components/landing/about-us";
+import Footer from "@/components/landing/footer";
 
 
 const Page = () => {
@@ -68,8 +68,8 @@ const Page = () => {
         {/* FOOTER */}
         <Footer />
       </div>
-      </div>
-      
+    </div>
+
   );
 };
 

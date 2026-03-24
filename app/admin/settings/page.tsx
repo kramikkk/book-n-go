@@ -1,7 +1,7 @@
-import { WebsiteConfiguration } from "@/components/website-configuration"
-import { BusinessProfile } from "@/components/business-profile"
-import { ChangeTheme } from "@/components/change-theme"
-import { ServicesManager } from "@/components/services-manager"
+import { WebsiteConfiguration } from "@/components/dashboard/website-configuration"
+import { BusinessProfile } from "@/components/dashboard/business-profile"
+import { ChangeTheme } from "@/components/dashboard/change-theme"
+import { ServicesManager } from "@/components/dashboard/services-manager"
 
 const SettingsPage = () => {
   return (

@@ -2,9 +2,9 @@ import React from "react"
 import Image from "next/image"
 import { cookies } from "next/headers"
 
-import { SiteHeader } from "@/components/site-header"
+import { SiteHeader } from "@/components/dashboard/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { UserSidebar } from "@/components/user-sidebar"
+import { UserSidebar } from "@/components/dashboard/user-sidebar"
 
 export default async function MainLayout({
   children,

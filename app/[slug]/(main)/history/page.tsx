@@ -1,4 +1,4 @@
-import { HistoryTable } from '@/components/history-table'
+import { HistoryTable } from '@/components/dashboard/history-table'
 
 export default function HistoryPage() {
   return (

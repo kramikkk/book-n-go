@@ -3,13 +3,14 @@
 import * as React from "react"
 import {
   IconCalendarClock,
+  IconCalendarCheck,
+  IconHistory,
   IconDashboard,
-  IconSettings,
   IconUser,
 } from "@tabler/icons-react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
+import { NavMain } from "@/components/dashboard/nav-main"
+import { NavUser } from "@/components/dashboard/nav-user"
 import {
   Avatar,
   AvatarFallback,
@@ -25,37 +26,38 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const data = {
-  user: {
-    name: "Book N. Go",
-    email: "BookNGo@gmail.com",
-    avatar: "/BNGCircleTransparent.png",
-  },
-  navMain: [
+const userData = {
+  name: "Book N. Go",
+  email: "BookNGo@gmail.com",
+  avatar: "/BNGCircleTransparent.png",
+}
+
+function getNavItems(slug: string) {
+  return [
     {
-      title: "Dashboard",
-      url: "/admin/dashboard",
-      icon: IconDashboard,
-    },
-    {
-      title: "Bookings",
-      url: "/admin/bookings",
+      title: "Book Now",
+      url: `/${slug}/book-now`,
       icon: IconCalendarClock,
     },
     {
-      title: "Profile",
-      url: "/admin/profile",
-      icon: IconUser,
+      title: "My Booking",
+      url: `/${slug}/my-booking`,
+      icon: IconCalendarCheck,
     },
     {
-      title: "Settings",
-      url: "/admin/settings",
-      icon: IconSettings,
+      title: "History",
+      url: `/${slug}/history`,
+      icon: IconHistory,
     },
-  ],
+    {
+      title: "Profile",
+      url: `/${slug}/profile`,
+      icon: IconUser,
+    },
+  ]
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function UserSidebar({ slug, ...props }: React.ComponentProps<typeof Sidebar> & { slug: string }) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -74,7 +76,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <span className="bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-3xl font-bold text-transparent">
                     BookNGo
                   </span>
-                  <span className="text-base font-semibold text-[#3EB09B]">Admin Panel</span>
+                  <span className="text-base font-semibold text-[#3EB09B]">User Panel</span>
                 </div>
               </a>
             </SidebarMenuButton>
@@ -82,10 +84,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={getNavItems(slug)} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
     </Sidebar>
   )

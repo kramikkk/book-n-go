@@ -1,6 +1,6 @@
-import { PersonalInformation } from "@/components/personal-information"
-import { ProfileCard } from "@/components/profile-card"
-import { ChangePassword } from "@/components/change-password"
+import { PersonalInformation } from "@/components/dashboard/personal-information"
+import { ProfileCard } from "@/components/dashboard/profile-card"
+import { ChangePassword } from "@/components/dashboard/change-password"
 
 const ProfilePage = () => {
   return (

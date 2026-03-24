@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { getUserProfile } from "@/lib/user-profile"
 
 type HistoryBooking = {
   ref: string
@@ -47,34 +48,19 @@ type HistoryBooking = {
   status: string
 }
 
-const history: HistoryBooking[] = [
-  { ref: "BNG-A1B2C3D4", business: "John's Barbershop", date: "2026-01-05", timeStart: "09:00 AM", timeEnd: "10:00 AM", type: "Appointment", service: "Haircut", status: "Completed" },
-  { ref: "BNG-E5F6G7H8", business: "Jane's Salon", date: "2026-01-12", timeStart: "11:30 AM", timeEnd: "12:30 PM", type: "Appointment", service: "Consultation", status: "Canceled" },
-  { ref: "BNG-I9J0K1L2", business: "John's Barbershop", date: "2026-01-20", timeStart: "02:00 PM", timeEnd: "04:00 PM", type: "Reservation", service: "Event Place", status: "Completed" },
-  { ref: "BNG-M3N4O5P6", business: "Jane's Salon", date: "2026-02-03", timeStart: "10:00 AM", timeEnd: "11:00 AM", type: "Appointment", service: "Follow-up", status: "Completed" },
-  { ref: "BNG-Q7R8S9T0", business: "John's Barbershop", date: "2026-02-15", timeStart: "03:00 PM", timeEnd: "05:00 PM", type: "Reservation", service: "Conference Hall", status: "Canceled" },
-  { ref: "BNG-U1V2W3X4", business: "Jane's Salon", date: "2026-02-28", timeStart: "08:00 AM", timeEnd: "09:00 AM", type: "Appointment", service: "Check-up", status: "Completed" },
-  { ref: "BNG-Y5Z6A7B8", business: "John's Barbershop", date: "2026-03-01", timeStart: "10:00 AM", timeEnd: "11:00 AM", type: "Appointment", service: "Meeting", status: "Completed" },
-  { ref: "BNG-C9D0E1F2", business: "Glow Spa", date: "2026-03-02", timeStart: "01:00 PM", timeEnd: "03:00 PM", type: "Reservation", service: "Room", status: "Canceled" },
-  { ref: "BNG-G3H4I5J6", business: "Jane's Salon", date: "2026-03-03", timeStart: "03:00 PM", timeEnd: "04:00 PM", type: "Appointment", service: "Consultation", status: "Completed" },
-  { ref: "BNG-K7L8M9N0", business: "Glow Spa", date: "2026-03-04", timeStart: "09:00 AM", timeEnd: "11:00 AM", type: "Reservation", service: "Table", status: "Completed" },
-  { ref: "BNG-O1P2Q3R4", business: "John's Barbershop", date: "2026-03-05", timeStart: "11:00 AM", timeEnd: "12:00 PM", type: "Appointment", service: "Follow-up", status: "Canceled" },
-  { ref: "BNG-S5T6U7V8", business: "Glow Spa", date: "2026-03-06", timeStart: "02:00 PM", timeEnd: "04:00 PM", type: "Reservation", service: "Event Place", status: "Completed" },
-  { ref: "BNG-W9X0Y1Z2", business: "Jane's Salon", date: "2026-03-07", timeStart: "10:00 AM", timeEnd: "11:00 AM", type: "Appointment", service: "Check-up", status: "Completed" },
-  { ref: "BNG-A3B4C5D6", business: "John's Barbershop", date: "2026-03-08", timeStart: "08:00 AM", timeEnd: "09:00 AM", type: "Appointment", service: "Consultation", status: "Canceled" },
-  { ref: "BNG-E7F8G9H0", business: "Glow Spa", date: "2026-03-09", timeStart: "04:00 PM", timeEnd: "05:00 PM", type: "Reservation", service: "Room", status: "Completed" },
-].sort((a, b) => new Date(`${b.date} ${b.timeStart}`).getTime() - new Date(`${a.date} ${a.timeStart}`).getTime())
-
 const statusClass: Record<string, string> = {
   Completed: "border-green-500 text-green-600",
   Canceled: "border-red-500 text-red-600",
+  Pending: "border-yellow-500 text-yellow-600",
 }
 
 const columns: ColumnDef<HistoryBooking>[] = [
   {
     accessorKey: "ref",
     header: "Booking Ref",
-    cell: ({ row }) => <span className="font-mono text-xs text-muted-foreground">{row.getValue("ref")}</span>,
+    cell: ({ row }) => (
+      <span className="font-mono text-xs text-muted-foreground">{row.getValue("ref")}</span>
+    ),
   },
   {
     accessorKey: "business",
@@ -149,9 +135,37 @@ export function HistoryTable() {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [data, setData] = React.useState<HistoryBooking[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    const profile = getUserProfile()
+    if (!profile?.phone) {
+      setLoading(false)
+      return
+    }
+
+    fetch(`/api/slug/history?phone=${encodeURIComponent(profile.phone)}`)
+      .then((res) => res.json())
+      .then(({ data }) => {
+        const mapped: HistoryBooking[] = (data ?? []).map((b: any) => ({
+          ref: b.id,
+          business: "Main Branch",
+          date: b.date,
+          timeStart: b.time_start,
+          timeEnd: b.time_end,
+          type: b.type,
+          service: b.service_id,
+          status: b.status,
+        }))
+        setData(mapped)
+      })
+      .catch((err) => console.error("Failed to fetch history:", err))
+      .finally(() => setLoading(false))
+  }, [])
 
   const table = useReactTable({
-    data: history,
+    data,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -212,14 +226,22 @@ export function HistoryTable() {
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <TableHead key={header.id}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   ))}
                 </TableRow>
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                    Loading history...
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.getVisibleCells().map((cell) => (

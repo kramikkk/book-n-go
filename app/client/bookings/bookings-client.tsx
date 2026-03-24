@@ -7,7 +7,7 @@ export function BookingsClient({ initialBookings }: { initialBookings: unknown[]
   const [bookings, setBookings] = useState(initialBookings)
 
   const handleStatusChange = async (id: string, status: 'Completed' | 'Canceled') => {
-    const res = await fetch(`/api/admin/bookings/${id}`, {
+    const res = await fetch(`/api/client/bookings/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),

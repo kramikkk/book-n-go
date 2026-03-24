@@ -34,22 +34,22 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "/admin/dashboard",
+      url: "/client/dashboard",
       icon: IconDashboard,
     },
     {
       title: "Bookings",
-      url: "/admin/bookings",
+      url: "/client/bookings",
       icon: IconCalendarClock,
     },
     {
       title: "Profile",
-      url: "/admin/profile",
+      url: "/client/profile",
       icon: IconUser,
     },
     {
       title: "Settings",
-      url: "/admin/settings",
+      url: "/client/settings",
       icon: IconSettings,
     },
   ],
@@ -74,7 +74,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <span className="bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-3xl font-bold text-transparent">
                     BookNGo
                   </span>
-                  <span className="text-base font-semibold text-[#3EB09B]">Admin Panel</span>
+                  <span className="text-base font-semibold text-[#3EB09B]">Client Panel</span>
                 </div>
               </a>
             </SidebarMenuButton>

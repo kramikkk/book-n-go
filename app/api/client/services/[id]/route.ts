@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse }  from 'next/server'
 
-// ─── PATCH /api/admin/services/[id] ──────────────────────────────────────────
+// ─── PATCH /api/client/services/[id] ──────────────────────────────────────────
 // Updates the label and/or description of a single service.
 // For drag-and-drop reordering, send orderedIds in the request body.
 //
@@ -21,7 +21,7 @@ export async function PATCH(
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user)                               return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
+    if (user.app_metadata?.role !== 'client') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
     const { id }                             = await params
     const body                               = await request.json()
@@ -42,7 +42,7 @@ export async function PATCH(
             .from('services')
             .update({ sort_order: index })
             .eq('id', sid)
-            .eq('admin_id', user.id)
+            .eq('client_id', user.id)
         )
       )
 
@@ -69,7 +69,7 @@ export async function PATCH(
       .from('services')
       .update(updates)
       .eq('id', id)
-      .eq('admin_id', user.id)
+      .eq('client_id', user.id)
       .select('id, type, label, description, sort_order, created_at')
       .single()
 
@@ -89,7 +89,7 @@ export async function PATCH(
   }
 }
 
-// ─── DELETE /api/admin/services/[id] ─────────────────────────────────────────
+// ─── DELETE /api/client/services/[id] ─────────────────────────────────────────
 // Deletes a service. Any bookings that referenced this service will have
 // their service_id set to null (handled by the DB schema).
 //
@@ -105,7 +105,7 @@ export async function DELETE(
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user)                               return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
+    if (user.app_metadata?.role !== 'client') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
     const { id } = await params
 
@@ -113,7 +113,7 @@ export async function DELETE(
       .from('services')
       .select('id')
       .eq('id', id)
-      .eq('admin_id', user.id)
+      .eq('client_id', user.id)
       .single()
 
     if (fetchError || !existing) {
@@ -127,7 +127,7 @@ export async function DELETE(
       .from('services')
       .delete()
       .eq('id', id)
-      .eq('admin_id', user.id)
+      .eq('client_id', user.id)
 
     if (deleteError) {
       return NextResponse.json({ error: 'Failed to delete service' }, { status: 500 })

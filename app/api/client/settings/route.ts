@@ -3,8 +3,8 @@ import { NextResponse }  from 'next/server'
 
 const VALID_COLORS = ['blue', 'indigo', 'purple', 'rose', 'orange', 'green', 'teal']
 
-// ─── GET /api/admin/settings ──────────────────────────────────────────────────
-// Returns the admin's current settings row.
+// ─── GET /api/client/settings ──────────────────────────────────────────────────
+// Returns the client's current settings row.
 //
 // Response 200:
 //   { settings: Settings | null }
@@ -15,12 +15,12 @@ export async function GET() {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user)                               return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
+    if (user.app_metadata?.role !== 'client') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
     const { data: settings, error } = await supabase
       .from('settings')
       .select('*')
-      .eq('admin_id', user.id)
+      .eq('client_id', user.id)
       .maybeSingle()
 
     if (error) {
@@ -33,7 +33,7 @@ export async function GET() {
   }
 }
 
-// ─── PATCH /api/admin/settings ────────────────────────────────────────────────
+// ─── PATCH /api/client/settings ────────────────────────────────────────────────
 // Updates one or more settings fields. All fields are optional —
 // only the fields you send will be updated.
 //
@@ -56,7 +56,7 @@ export async function PATCH(request: Request) {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user)                               return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
+    if (user.app_metadata?.role !== 'client') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
     const body = await request.json()
 
@@ -124,7 +124,7 @@ export async function PATCH(request: Request) {
 
     const { data: settings, error: dbError } = await supabase
       .from('settings')
-      .upsert({ admin_id: user.id, ...updates }, { onConflict: 'admin_id' })
+      .upsert({ client_id: user.id, ...updates }, { onConflict: 'client_id' })
       .select('*')
       .single()
 

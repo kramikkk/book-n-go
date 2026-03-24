@@ -3,15 +3,15 @@ import { ChartBar } from "@/components/dashboard/chart-bar"
 import { ChartPie } from "@/components/dashboard/chart-pie"
 import { DashboardCards } from "@/components/dashboard/dashboard-cards"
 import { UpcomingTable } from "@/components/dashboard/upcoming-table"
-import { requireAdmin } from "@/lib/supabase/server"
-import { buildStats } from "@/app/api/admin/dashboard/stats"
-import { buildBarChart } from "@/app/api/admin/dashboard/bar-chart"
-import { buildPieChart } from "@/app/api/admin/dashboard/pie-chart"
-import type { RawRow, BookingRow } from "@/app/api/admin/dashboard/types"
+import { requireClient } from "@/lib/supabase/server"
+import { buildStats } from "@/app/api/client/dashboard/stats"
+import { buildBarChart } from "@/app/api/client/dashboard/bar-chart"
+import { buildPieChart } from "@/app/api/client/dashboard/pie-chart"
+import type { RawRow, BookingRow } from "@/app/api/client/dashboard/types"
 import type { Booking } from "@/lib/schemas"
 
 export default async function DashboardPage() {
-  const { error, supabase, user } = await requireAdmin()
+  const { error, supabase, user } = await requireClient()
   if (error) redirect("/")
 
   // Use UTC for server-side rendering; charts are timezone-aware when the

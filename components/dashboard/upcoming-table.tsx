@@ -192,7 +192,7 @@ export function UpcomingTable({ bookings }: UpcomingTableProps) {
               Upcoming Bookings
             </h1>
           </div>
-          <Link href="/admin/bookings" className="text-sm font-medium text-[#3A79C3] hover:underline">
+          <Link href="/client/bookings" className="text-sm font-medium text-[#3A79C3] hover:underline">
             View All
           </Link>
         </CardTitle>

@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation"
-import { requireAdmin } from "@/lib/supabase/server"
+import { requireClient } from "@/lib/supabase/server"
 import { BookingsClient } from "./bookings-client"
 
 const BookingsPage = async () => {
-  const { error, supabase, user } = await requireAdmin()
+  const { error, supabase, user } = await requireClient()
   if (error) redirect("/")
 
   const { data, error: dbError } = await supabase

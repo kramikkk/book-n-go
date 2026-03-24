@@ -24,7 +24,7 @@ export async function createClient() {
   )
 }
 
-export async function requireAdmin() {
+export async function requireClient() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   

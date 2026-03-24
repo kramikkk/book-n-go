@@ -8,11 +8,11 @@ This guide covers everything the frontend needs to connect to the API. All endpo
 1. [Auth](#1-auth)
 2. [Profile](#2-profile)
 3. [Avatar](#3-avatar)
-4. [Admin — Dashboard](#4-admin--dashboard)
-5. [Admin — Bookings](#5-admin--bookings)
-6. [Admin — Services](#6-admin--services)
-7. [Admin — Settings](#7-admin--settings)
-8. [Admin — Logo](#8-admin--logo)
+4. [Client — Dashboard](#4-admin--dashboard)
+5. [Client — Bookings](#5-admin--bookings)
+6. [Client — Services](#6-admin--services)
+7. [Client — Settings](#7-admin--settings)
+8. [Client — Logo](#8-admin--logo)
 9. [Response Shape Reference](#9-response-shape-reference)
 10. [Error Handling](#10-error-handling)
 
@@ -71,7 +71,7 @@ const data = await res.json()
 > **Note:** The login response returns a `LoginUser` object, not the full `Profile`. It only contains `id`, `first_name`, `last_name`, `email`, `role`, and `avatar_url`. Call `GET /api/profile` after login if you need `middle_name`, `phone`, or `created_at`.
 
 The `user.role` field in the response tells you where to redirect:
-- `'admin'` → redirect to `/admin/dashboard`
+- `'admin'` → redirect to `/client/dashboard`
 - `'customer'` → redirect to `/{slug}/book-now` or customer dashboard
 
 ---
@@ -212,16 +212,16 @@ const data = await res.json()
 
 ---
 
-## 4. Admin — Dashboard
+## 4. Client — Dashboard
 
 ### Get Dashboard Data
-**`GET /api/admin/dashboard`**
+**`GET /api/client/dashboard`**
 
 Returns everything needed to render the dashboard in one request. Pass the user's IANA timezone so charts and the current week are calculated correctly.
 
 ```ts
 const tz = Intl.DateTimeFormat().resolvedOptions().timeZone // e.g. 'Asia/Manila'
-const res = await fetch(`/api/admin/dashboard?tz=${encodeURIComponent(tz)}`)
+const res = await fetch(`/api/client/dashboard?tz=${encodeURIComponent(tz)}`)
 const data = await res.json()
 // 200: { stats, barChart, pieChart, upcoming }
 // 401: { error: 'Unauthorized' }
@@ -267,10 +267,10 @@ const data = await res.json()
 
 ---
 
-## 5. Admin — Bookings
+## 5. Client — Bookings
 
 ### Get All Bookings
-**`GET /api/admin/bookings`**
+**`GET /api/client/bookings`**
 
 ```ts
 // All params are optional
@@ -282,7 +282,7 @@ const params = new URLSearchParams({
   to:     '2026-03-31',     // range end
 })
 
-const res = await fetch(`/api/admin/bookings?${params}`)
+const res = await fetch(`/api/client/bookings?${params}`)
 const { bookings } = await res.json()
 // 200: { bookings: Booking[] }
 // 400: { error: 'Use either `date` or `from`/`to`, not both' }
@@ -314,12 +314,12 @@ const { bookings } = await res.json()
 ---
 
 ### Update Booking Status
-**`PATCH /api/admin/bookings/[id]`**
+**`PATCH /api/client/bookings/[id]`**
 
 Used by the "Mark as Completed" and "Cancel Booking" actions in the bookings table dropdown.
 
 ```ts
-const res = await fetch(`/api/admin/bookings/${bookingId}`, {
+const res = await fetch(`/api/client/bookings/${bookingId}`, {
   method: 'PATCH',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -337,15 +337,15 @@ After a successful update, refresh the bookings list or update the row in local 
 
 ---
 
-## 6. Admin — Services
+## 6. Client — Services
 
 ### Get Services
-**`GET /api/admin/services`**
+**`GET /api/client/services`**
 
 Call this on settings page load to populate the `ServicesManager`.
 
 ```ts
-const res = await fetch('/api/admin/services')
+const res = await fetch('/api/client/services')
 const { services } = await res.json()
 // 200: { services: { appointment: Service[], reservation: Service[] } }
 ```
@@ -365,12 +365,12 @@ const { services } = await res.json()
 ---
 
 ### Add Service
-**`POST /api/admin/services`**
+**`POST /api/client/services`**
 
 Called when the admin clicks "Add Service" in `ServicesManager`.
 
 ```ts
-const res = await fetch('/api/admin/services', {
+const res = await fetch('/api/client/services', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -388,12 +388,12 @@ const data = await res.json()
 ---
 
 ### Update Service
-**`PATCH /api/admin/services/[id]`**
+**`PATCH /api/client/services/[id]`**
 
 Called when the admin edits a service label or description inline.
 
 ```ts
-const res = await fetch(`/api/admin/services/${serviceId}`, {
+const res = await fetch(`/api/client/services/${serviceId}`, {
   method: 'PATCH',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -410,12 +410,12 @@ const data = await res.json()
 ---
 
 ### Delete Service
-**`DELETE /api/admin/services/[id]`**
+**`DELETE /api/client/services/[id]`**
 
 Called when the admin clicks the trash icon on a service.
 
 ```ts
-const res = await fetch(`/api/admin/services/${serviceId}`, {
+const res = await fetch(`/api/client/services/${serviceId}`, {
   method: 'DELETE',
 })
 const data = await res.json()
@@ -426,12 +426,12 @@ const data = await res.json()
 ---
 
 ### Reorder Services
-**`PATCH /api/admin/services/[id]`** (with `orderedIds`)
+**`PATCH /api/client/services/[id]`** (with `orderedIds`)
 
 Called after drag-and-drop reordering. Send the full ordered array of IDs for that service type. Pass any service ID from that type as the `[id]` param — it is only used for auth scoping.
 
 ```ts
-const res = await fetch(`/api/admin/services/${anyServiceId}`, {
+const res = await fetch(`/api/client/services/${anyServiceId}`, {
   method: 'PATCH',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -447,15 +447,15 @@ const data = await res.json()
 
 ---
 
-## 7. Admin — Settings
+## 7. Client — Settings
 
 ### Get Settings
-**`GET /api/admin/settings`**
+**`GET /api/client/settings`**
 
 Call on settings page load to pre-fill all forms. Returns `null` for new admins who haven't saved settings yet — handle this gracefully with empty defaults.
 
 ```ts
-const res = await fetch('/api/admin/settings')
+const res = await fetch('/api/client/settings')
 const { settings } = await res.json()
 // 200: { settings: Settings | null }
 ```
@@ -480,12 +480,12 @@ const { settings } = await res.json()
 ---
 
 ### Update Settings
-**`PATCH /api/admin/settings`**
+**`PATCH /api/client/settings`**
 
 All fields are optional — only send what changed. Works for both first-time saves and updates (upsert).
 
 ```ts
-const res = await fetch('/api/admin/settings', {
+const res = await fetch('/api/client/settings', {
   method: 'PATCH',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -516,10 +516,10 @@ const data = await res.json()
 
 ---
 
-## 8. Admin — Logo
+## 8. Client — Logo
 
 ### Upload Logo
-**`POST /api/admin/settings/logo`**
+**`POST /api/client/settings/logo`**
 
 Accepts `multipart/form-data`. JPG, PNG, or GIF only. Max 2MB. Optionally updates `business_name` at the same time.
 
@@ -528,7 +528,7 @@ const formData = new FormData()
 formData.append('logo', file)                    // required
 formData.append('business_name', 'My Salon')     // optional
 
-const res = await fetch('/api/admin/settings/logo', {
+const res = await fetch('/api/client/settings/logo', {
   method: 'POST',
   body: formData,
   // Do NOT set Content-Type header manually
@@ -543,12 +543,12 @@ const data = await res.json()
 ---
 
 ### Remove Logo
-**`DELETE /api/admin/settings/logo`**
+**`DELETE /api/client/settings/logo`**
 
 Clears `logo_url` from settings.
 
 ```ts
-const res = await fetch('/api/admin/settings/logo', { method: 'DELETE' })
+const res = await fetch('/api/client/settings/logo', { method: 'DELETE' })
 const data = await res.json()
 // 200: { message: 'Logo removed successfully' }
 ```

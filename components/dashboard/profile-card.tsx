@@ -4,9 +4,9 @@ import * as React from "react"
 import { Camera } from "lucide-react"
 import { IconPhoto } from "@tabler/icons-react"
 import { toast } from "sonner"
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
-import { Button } from "./ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 export const ProfileCard = () => {
   const [preview, setPreview] = React.useState<string | null>(null)

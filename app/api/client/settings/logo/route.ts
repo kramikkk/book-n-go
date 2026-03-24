@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-// ─── POST /api/admin/settings/logo ───────────────────────────────────────────
+// ─── POST /api/client/settings/logo ───────────────────────────────────────────
 // Uploads a new business logo and optionally updates the business name.
 // Accepts multipart/form-data.
 //
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user)                                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
+    if (user.app_metadata?.role !== 'client') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
     const formData     = await request.formData()
     const file         = formData.get('logo') as File | null
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
 
     const { error: settingsError } = await supabase
       .from('settings')
-      .upsert({ admin_id: user.id, ...updates }, { onConflict: 'admin_id' })
+      .upsert({ client_id: user.id, ...updates }, { onConflict: 'client_id' })
 
     if (settingsError) {
       return NextResponse.json(
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
   }
 }
 
-// ─── DELETE /api/admin/settings/logo ─────────────────────────────────────────
+// ─── DELETE /api/client/settings/logo ─────────────────────────────────────────
 // Removes the business logo and clears logo_url in settings.
 //
 // Response 200:
@@ -109,7 +109,7 @@ export async function DELETE() {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user)                                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
+    if (user.app_metadata?.role !== 'client') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
     // FIX: derive paths from MIME_TO_EXT instead of a hand-written extensions
     // list. The old list included 'jpeg' which was never written by the upload
@@ -120,7 +120,7 @@ export async function DELETE() {
 
     const { error: settingsError } = await supabase
       .from('settings')
-      .upsert({ admin_id: user.id, logo_url: null }, { onConflict: 'admin_id' })
+      .upsert({ client_id: user.id, logo_url: null }, { onConflict: 'client_id' })
 
     if (settingsError) {
       return NextResponse.json(

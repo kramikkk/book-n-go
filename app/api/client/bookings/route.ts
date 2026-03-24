@@ -1,4 +1,4 @@
-import { requireAdmin } from '@/lib/supabase/server'
+import { requireClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 // Supabase returns joined tables as arrays, not single objects
@@ -16,8 +16,8 @@ type RawBookingRow = {
   profiles:   { id: string; first_name: string | null; last_name: string | null; email: string | null }[]
 }
 
-// ─── GET /api/admin/bookings ──────────────────────────────────────────────────
-// Returns all bookings belonging to this admin.
+// ─── GET /api/client/bookings ──────────────────────────────────────────────────
+// Returns all bookings belonging to this client.
 //
 // Query params (all optional):
 //   status   = Pending | Completed | Canceled
@@ -34,7 +34,7 @@ type RawBookingRow = {
 
 export async function GET(request: Request) {
   try {
-    const { error, status, supabase, user } = await requireAdmin()
+    const { error, status, supabase, user } = await requireClient()
     if (error) return NextResponse.json({ error }, { status })
 
     const { searchParams } = new URL(request.url)
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
         created_at,
         profiles!bookings_customer_id_fkey ( id, first_name, last_name, email )
       `)
-      .eq('admin_id', user!.id)
+      .eq('client_id', user!.id)
       .order('date',       { ascending: false })
       .order('time_start', { ascending: false })
 

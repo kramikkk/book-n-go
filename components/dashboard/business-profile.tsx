@@ -5,11 +5,11 @@ import { useRef, useState } from "react"
 import { Camera } from "lucide-react"
 import { IconBuildingStore } from "@tabler/icons-react"
 import { toast } from "sonner"
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
-import { Button } from "./ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
-import { Input } from "./ui/input"
-import { Label } from "./ui/label"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 export const BusinessProfile = () => {
   const [preview, setPreview] = useState<string | null>(null)
@@ -48,14 +48,14 @@ export const BusinessProfile = () => {
       if (file) {
         const formData = new FormData()
         formData.append('logo', file)
-        ops.push(fetch('/api/admin/settings/logo', { method: 'POST', body: formData }))
+        ops.push(fetch('/api/client/settings/logo', { method: 'POST', body: formData }))
       } else if (preview === null && isDirty) {
-        ops.push(fetch('/api/admin/settings/logo', { method: 'DELETE' }))
+        ops.push(fetch('/api/client/settings/logo', { method: 'DELETE' }))
       }
 
       if (businessName.trim()) {
         ops.push(
-          fetch('/api/admin/settings', {
+          fetch('/api/client/settings', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ business_name: businessName.trim() }),

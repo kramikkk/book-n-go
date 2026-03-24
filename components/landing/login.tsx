@@ -92,7 +92,7 @@ export default function Login() {
  <CardFooter className="flex-col gap-2">
   <Button 
   type="submit"
-  onClick={() => router.push("/dashboard")}
+  onClick={() => router.push("/client/dashboard")}
   className="w-full text-white rounded-lg py-2 font-medium bg-gradient-to-r from-[#409689] to-[#2F46AC] hover:from-[#2F46AC] hover:to-[#409689] transition-colors duration-300">
     Login
   </Button>

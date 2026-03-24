@@ -1,4 +1,4 @@
-import { requireAdmin } from '@/lib/supabase/server'
+import { requireClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 import { buildStats } from './stats'
@@ -6,13 +6,13 @@ import { buildBarChart } from './bar-chart'
 import { buildPieChart } from './pie-chart'
 import type { RawRow, BookingRow, DashboardData } from './types'
 
-// ─── GET /api/admin/dashboard ─────────────────────────────────────────────────
+// ─── GET /api/client/dashboard ─────────────────────────────────────────────────
 // Returns all data needed to render the dashboard in a single request.
 // Limits search to the last 12 months for scalability.
 
 export async function GET(request: Request) {
   try {
-    const { error, status, supabase, user } = await requireAdmin()
+    const { error, status, supabase, user } = await requireClient()
     if (error) return NextResponse.json({ error }, { status })
 
     // Scale optimization: only fetch bookings from the last 12 months to prevent
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
           created_at,
           profiles!bookings_customer_id_fkey ( id, first_name, last_name, email )
         `)
-        .eq('admin_id', user!.id)
+        .eq('client_id', user!.id)
         .gte('date', dateLimit)
         .order('date',       { ascending: true })
         .order('time_start', { ascending: true }),
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
       supabase
         .from('bookings')
         .select('*', { count: 'exact', head: true })
-        .eq('admin_id', user!.id),
+        .eq('client_id', user!.id),
     ])
 
     if (dbError) {

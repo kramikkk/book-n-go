@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-// ─── PATCH /api/admin/bookings/[id] ──────────────────────────────────────────
+// ─── PATCH /api/client/bookings/[id] ──────────────────────────────────────────
 // Updates the status of a single booking.
-// Admin can only update bookings that belong to them.
+// Client can only update bookings that belong to them.
 //
 // Request body:
 //   { status: 'Pending' | 'Completed' | 'Canceled' }
@@ -22,7 +22,7 @@ export async function PATCH(
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (user.app_metadata?.role !== 'client') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const { id } = await params
     const body = await request.json()
@@ -42,12 +42,12 @@ export async function PATCH(
       )
     }
 
-    // .eq('admin_id') ensures the admin can only update their own bookings
+    // .eq('client_id') ensures the client can only update their own bookings
     const { data: booking, error: dbError } = await supabase
       .from('bookings')
       .update({ status })
       .eq('id', id)
-      .eq('admin_id', user.id)
+      .eq('client_id', user.id)
       .select('id, status')
       .single()
 

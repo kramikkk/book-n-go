@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server'
 
 const VALID_TYPES = ['appointment', 'reservation']
 
-// ─── GET /api/admin/services ──────────────────────────────────────────────────
-// Returns all services for this admin, grouped by type.
+// ─── GET /api/client/services ──────────────────────────────────────────────────
+// Returns all services for this client, grouped by type.
 //
 // Response 200:
 //   {
@@ -23,12 +23,12 @@ export async function GET() {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (user.app_metadata?.role !== 'client') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const { data, error } = await supabase
       .from('services')
       .select('id, type, label, description, sort_order, created_at')
-      .eq('admin_id', user.id)
+      .eq('client_id', user.id)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true })
 
@@ -47,8 +47,8 @@ export async function GET() {
   }
 }
 
-// ─── POST /api/admin/services ─────────────────────────────────────────────────
-// Creates a new service for this admin.
+// ─── POST /api/client/services ─────────────────────────────────────────────────
+// Creates a new service for this client.
 //
 // Request body:
 //   { type: 'appointment' | 'reservation', label: string, description?: string }
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (user.app_metadata?.role !== 'client') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const { type, label, description } = await request.json()
 
@@ -85,13 +85,13 @@ export async function POST(request: Request) {
     const { count } = await supabase
       .from('services')
       .select('*', { count: 'exact', head: true })
-      .eq('admin_id', user.id)
+      .eq('client_id', user.id)
       .eq('type', type)
 
     const { data: service, error: dbError } = await supabase
       .from('services')
       .insert({
-        admin_id:    user.id,
+        client_id:    user.id,
         type,
         label:       label.trim(),
         description: description?.trim() || null,

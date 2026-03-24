@@ -4,7 +4,7 @@ import type { BarChartData, BarChartEntry, BookingRow } from './types'
 // Feeds the Bookings Chart bar chart on the dashboard.
 
 export function buildBarChart(rows: BookingRow[], tz: string = 'UTC'): BarChartData {
-  // Format a Date to YYYY-MM-DD in the admin's timezone.
+  // Format a Date to YYYY-MM-DD in the client's timezone.
   // 'en-CA' locale gives us that format natively.
   const toLocalDateStr = (d: Date): string =>
     new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(d)
@@ -14,7 +14,7 @@ export function buildBarChart(rows: BookingRow[], tz: string = 'UTC'): BarChartD
   const [yearStr]   = todayStr.split('-')
   const currentYear = parseInt(yearStr, 10)
 
-  // ── Daily: Mon–Sun of the current week (in the admin's timezone) ─────────
+  // ── Daily: Mon–Sun of the current week (in the client's timezone) ─────────
   // Derive the local day-of-week by parsing the YYYY-MM-DD string we already
   // have — no reliance on the server's own timezone.
   const [, localMonth, localDay] = todayStr.split('-').map(Number)
@@ -37,7 +37,7 @@ export function buildBarChart(rows: BookingRow[], tz: string = 'UTC'): BarChartD
     }
   })
 
-  // ── Monthly: Jan–Dec of the current year (in the admin's timezone) ───────
+  // ── Monthly: Jan–Dec of the current year (in the client's timezone) ───────
   // Parse year/month directly from the YYYY-MM-DD string to avoid any
   // timezone shifting that new Date(b.date) can introduce.
   const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']

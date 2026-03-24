@@ -10,11 +10,11 @@ function isPublicRoute(pathname: string): boolean {
   if (PUBLIC_ROUTES.includes(pathname)) return true
   if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return true
 
-  // /{slug} landing page — matches /something but not /admin or /api
+  // /{slug} landing page — matches /something but not /client or /api
   // The landing page is public so users can see it before logging in
   const slugLanding = /^\/[^/]+$/.test(pathname)
   const isReservedRoot =
-    pathname.startsWith('/admin') ||
+    pathname.startsWith('/client') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/customer')
   if (slugLanding && !isReservedRoot) return true
@@ -70,14 +70,14 @@ export async function updateSession(request: NextRequest) {
   
   const role = user.app_metadata?.role
 
-  // Admin routes — only admins allowed
-  if (pathname.startsWith('/admin') && role !== 'admin') {
+  // Client routes — only admins allowed
+  if (pathname.startsWith('/client') && role !== 'admin') {
     return NextResponse.redirect(new URL('/customer/dashboard', request.url))
   }
 
   // Customer routes — only customers allowed
   if (pathname.startsWith('/customer') && role !== 'customer') {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    return NextResponse.redirect(new URL('/client/dashboard', request.url))
   }
 
   return response

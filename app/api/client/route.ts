@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-// ─── GET /api/admin ───────────────────────────────────────────────────────────
-// Returns the currently authenticated admin's profile.
+// ─── GET /api/client ───────────────────────────────────────────────────────────
+// Returns the currently authenticated client's profile.
 //
 // Response 200:
 //   { profile: Profile }
@@ -13,7 +13,7 @@ export async function GET() {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user)                               return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (user.app_metadata?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
+    if (user.app_metadata?.role !== 'client') return NextResponse.json({ error: 'Forbidden' },    { status: 403 })
 
     const { data: profile, error } = await supabase
       .from('profiles')

@@ -1,57 +1,93 @@
-// components/FeatureCards.tsx
+"use client";
+
 import React from "react";
 import { Zap, Shield, TrendingUp } from "lucide-react";
+import { motion, Variants } from "framer-motion";
 
 const FeatureCards = () => {
+  const container: Variants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 0.3
+      }
+    }
+  };
+
+  const item: Variants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="absolute left-0 right-0 lg:left-24 lg:right-auto top-[350px] sm:top-[380px] md:top-[400px] lg:top-[400px] flex justify-center lg:justify-start gap-4 sm:gap-4 md:gap-6 lg:gap-6 px-4 sm:px-6 md:px-0 lg:px-0">
+    <motion.div 
+      variants={container}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-50px" }}
+      className="flex flex-wrap justify-start gap-4 sm:gap-6 z-20 w-full"
+    >
       
       {/* Card 1 */}
-      <div className="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-2 sm:p-3 md:p-3 lg:p-3 min-w-[150px] sm:min-w-[160px] md:min-w-[180px] lg:min-w-[200px] relative flex flex-col justify-center">
-        <Zap
-          size={30}
-          className="absolute left-3 sm:left-4 md:left-3 lg:left-5 top-1/2 -translate-y-1/2"
-          color="#3FB09C"
-        />
-        <h3 className="font-semibold text-white text-right text-[13px] sm:text-[14px] md:text-[15px] lg:text-[15px] pr-1 sm:pr-2 md:pr-1 lg:pr-3">
-          Instant Booking
-        </h3>
-        <p className="text-right text-white/80 text-[11px] sm:text-[12px] md:text-[13px] lg:text-[13px] pr-4 sm:pr-2 md:pr-4 lg:pr-6">
-          Book in seconds.
-        </p>
-      </div>
+      <motion.div 
+        variants={item}
+        whileHover={{ y: -6, scale: 1.02 }}
+        className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl p-4 min-w-[200px] flex items-center gap-4 transition-all duration-300 hover:bg-white/20 hover:border-white/40 cursor-pointer group flex-1 max-w-[240px]"
+      >
+        <div className="p-2 bg-white/10 rounded-xl group-hover:bg-[#3FB09C]/20 transition-colors shrink-0">
+          <Zap size={24} color="#3FB09C" className="drop-shadow-sm" />
+        </div>
+        <div className="flex flex-col text-left">
+          <h3 className="font-semibold text-white text-[15px] leading-tight">
+            Instant Booking
+          </h3>
+          <p className="text-white/80 text-[13px] mt-0.5 font-light">
+            Book in seconds.
+          </p>
+        </div>
+      </motion.div>
 
       {/* Card 2 */}
-      <div className="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-2 sm:p-3 md:p-3 lg:p-3 min-w-[150px] sm:min-w-[160px] md:min-w-[180px] lg:min-w-[200px] relative flex flex-col justify-center">
-        <Shield
-          size={30}
-          className="absolute left-3 sm:left-4 md:left-3 lg:left-5 top-1/2 -translate-y-1/2"
-          color="#2F3EAE"
-        />
-        <h3 className="font-semibold text-white text-right text-[13px] sm:text-[14px] md:text-[15px] lg:text-[15px] pr-2 sm:pr-3 md:pr-5 lg:pr-7">
-          Secure & Safe
-        </h3>
-        <p className="text-right text-white/80 text-[11px] sm:text-[12px] md:text-[13px] lg:text-[13px] pr-2 sm:pr-4 md:pr-4 lg:pr-6">
-          Book in seconds.
-        </p>
-      </div>
+      <motion.div 
+        variants={item}
+        whileHover={{ y: -6, scale: 1.02 }}
+        className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl p-4 min-w-[200px] flex items-center gap-4 transition-all duration-300 hover:bg-white/20 hover:border-white/40 cursor-pointer group flex-1 max-w-[240px]"
+      >
+        <div className="p-2 bg-white/10 rounded-xl group-hover:bg-[#2F44AD]/30 transition-colors shrink-0">
+          <Shield size={24} color="#E8F1F2" className="drop-shadow-sm" />
+        </div>
+        <div className="flex flex-col text-left">
+          <h3 className="font-semibold text-white text-[15px] leading-tight">
+            Secure & Safe
+          </h3>
+          <p className="text-white/80 text-[13px] mt-0.5 font-light">
+            End-to-end security.
+          </p>
+        </div>
+      </motion.div>
 
       {/* Card 3 */}
-      <div className="bg-white/50 backdrop-blur-sm rounded-xl shadow-md p-2 sm:p-3 md:p-3 lg:p-3 min-w-[150px] sm:min-w-[160px] md:min-w-[180px] lg:min-w-[200px] relative flex flex-col justify-center">
-        <TrendingUp
-          size={30}
-          color="#DCE55F"
-          className="absolute left-3 sm:left-4 md:left-3 lg:left-5 top-1/2 -translate-y-1/2"
-        />
-        <h3 className="font-semibold text-white text-right text-[13px] sm:text-[14px] md:text-[15px] lg:text-[15px] pr-7 sm:pr-3 md:pr-12 lg:pr-14">
-          Best Rates
-        </h3>
-        <p className="text-right text-white/80 text-[11px] sm:text-[12px] md:text-[13px] lg:text-[13px] pr-0.25 sm:pr-4 md:pr-1 lg:pr-3">
-          Competitive pricing.
-        </p>
-      </div>
+      <motion.div 
+        variants={item}
+        whileHover={{ y: -6, scale: 1.02 }}
+        className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl p-4 min-w-[200px] flex items-center gap-4 transition-all duration-300 hover:bg-white/20 hover:border-white/40 cursor-pointer group flex-1 max-w-[240px]"
+      >
+        <div className="p-2 bg-white/10 rounded-xl group-hover:bg-[#DCE55F]/20 transition-colors shrink-0">
+          <TrendingUp size={24} color="#DCE55F" className="drop-shadow-sm" />
+        </div>
+        <div className="flex flex-col text-left">
+          <h3 className="font-semibold text-white text-[15px] leading-tight">
+            Best Rates
+          </h3>
+          <p className="text-white/80 text-[13px] mt-0.5 font-light">
+            Competitive pricing.
+          </p>
+        </div>
+      </motion.div>
 
-    </div>
+    </motion.div>
   );
 };
 

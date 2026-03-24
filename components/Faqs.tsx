@@ -35,7 +35,7 @@ const faqItems: FAQItem[] = [
   {
     question: "Who do I contact for support?",
     answer:
-      "For assistance, contact our support team via email at support@yourdomain.com or call us at +63 XXX XXX XXXX.",
+      "Contact your service provider directly for support.",
   },
 ];
 

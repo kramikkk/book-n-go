@@ -9,6 +9,7 @@ import { ServiceSelector } from "@/components/service-selector"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TIME_SLOTS } from "@/lib/booking-constants"
+import { MOCK_BOOKED_DATES, MOCK_BOOKED_SLOTS } from "@/lib/mock-data"
 import { DEFAULT_SERVICES, getServicesConfig, type ServicesConfig } from "@/lib/services-config"
 import { getUserProfile, type UserProfile } from "@/lib/user-profile"
 import {
@@ -74,22 +75,20 @@ export default function BookNowPage() {
     return diff > 0 ? `${diff} hour${diff > 1 ? "s" : ""}` : null
   }, [bookingData.startTime, bookingData.endTime])
 
-  const canContinueStep1 = !!bookingData.startTime && !!bookingData.endTime
+  const canContinueStep1 = !!bookingData.date && !!bookingData.startTime && !!bookingData.endTime
   const canContinueStep2 = !!selectedService && !!profile
 
-const handleConfirmBooking = async () => {
-  console.log("Button clicked! Starting database insert...");
+  const handleConfirmBooking = async () => {
+    if (!bookingData.date || !bookingData.startTime || !bookingData.endTime || !profile) return
 
-  if (!bookingData.date || !bookingData.startTime || !bookingData.endTime || !profile) {
-    console.error("Missing data:", { date: !!bookingData.date, time: !!bookingData.startTime, profile: !!profile });
-    return;
-  }
+    const ref = `BNG-${crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`
 
-  try {
-    const response = await fetch('/api/slug/bookings', {
+    await fetch('/api/slug/bookings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        slug,
+        ref,
         name: fullName,
         phone: profile.phone,
         date: bookingData.date.toISOString(),
@@ -97,37 +96,24 @@ const handleConfirmBooking = async () => {
         endTime: bookingData.endTime,
         serviceId: selectedService,
         type: bookingData.bookingType,
-        status: "pending",
       }),
-    });
+    })
 
-    const result = await response.json();
-
-    if (response.ok) {
-      console.log("Success! Row added to Supabase.");
-      const params = new URLSearchParams({
-        ref: result.data?.reference_number || `BNG-${crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase()}`,
-        issuedAt: new Date().toISOString(),
-        date: bookingData.date.toISOString(),
-        startTime: bookingData.startTime,
-        endTime: bookingData.endTime,
-        ...(duration ? { duration } : {}),
-        bookingType: bookingData.bookingType,
-        ...(selectedServiceLabel ? { service: selectedServiceLabel } : {}),
-        name: fullName,
-        email: profile.email,
-        phone: profile.phone,
-      });
-      router.push(`/${slug}/my-booking?${params.toString()}`);
-    } else {
-      console.error("Database Error:", result.error);
-      alert(`Error: ${result.error}`);
-    }
-  } catch (error) {
-    console.error("Network connection failed:", error);
-    alert("Could not reach the server.");
+    const params = new URLSearchParams({
+      ref,
+      issuedAt: new Date().toISOString(),
+      date: bookingData.date.toISOString(),
+      startTime: bookingData.startTime,
+      endTime: bookingData.endTime,
+      ...(duration ? { duration } : {}),
+      bookingType: bookingData.bookingType,
+      ...(selectedServiceLabel ? { service: selectedServiceLabel } : {}),
+      name: fullName,
+      email: profile.email,
+      phone: profile.phone,
+    })
+    router.push(`/${slug}/my-booking?${params.toString()}`)
   }
-};
 
   const handleReset = () => {
     setCalendarKey((k) => k + 1)
@@ -143,7 +129,19 @@ const handleConfirmBooking = async () => {
 
         {/* Step 1 — Date, Time & Booking Type */}
         {step === 1 && (
-          <BookingCalendar key={calendarKey} onChange={setBookingData} />
+          <BookingCalendar
+            key={calendarKey}
+            date={bookingData.date}
+            startTime={bookingData.startTime}
+            endTime={bookingData.endTime}
+            bookingType={bookingData.bookingType}
+            bookedSlots={MOCK_BOOKED_SLOTS}
+            fullyBookedDates={MOCK_BOOKED_DATES}
+            onDateChange={(date) => setBookingData((prev) => ({ ...prev, date }))}
+            onStartTimeChange={(startTime) => setBookingData((prev) => ({ ...prev, startTime }))}
+            onEndTimeChange={(endTime) => setBookingData((prev) => ({ ...prev, endTime }))}
+            onBookingTypeChange={(bookingType) => setBookingData((prev) => ({ ...prev, bookingType }))}
+          />
         )}
 
         {/* Step 2 — Service selection + profile preview */}

@@ -6,19 +6,35 @@ export async function GET(request: Request) {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const phone = searchParams.get("phone");
+    const slug = searchParams.get("slug");
 
     if (!phone) {
       return NextResponse.json({ error: "Phone required" }, { status: 400 });
+    }
+
+    if (!slug) {
+      return NextResponse.json({ error: "slug required" }, { status: 400 });
+    }
+
+    const { data: settings, error: settingsError } = await supabase
+      .from("settings")
+      .select("admin_id")
+      .eq("slug", slug)
+      .single();
+
+    if (settingsError || !settings) {
+      return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
     const { data, error } = await supabase
       .from("bookings")
       .select("*")
       .eq("contact", phone)
+      .eq("admin_id", settings.admin_id)
       .eq("status", "Pending")
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -26,7 +42,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ data }, { status: 200 });
 
-  } catch (error: any) {
+  } catch {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

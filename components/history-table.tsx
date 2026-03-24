@@ -35,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useParams } from "next/navigation"
 import { getUserProfile } from "@/lib/user-profile"
 
 type HistoryBooking = {
@@ -52,6 +53,7 @@ const statusClass: Record<string, string> = {
   Completed: "border-green-500 text-green-600",
   Canceled: "border-red-500 text-red-600",
   Pending: "border-yellow-500 text-yellow-600",
+  Confirmed: "border-blue-500 text-blue-600",
 }
 
 const columns: ColumnDef<HistoryBooking>[] = [
@@ -132,6 +134,7 @@ const columns: ColumnDef<HistoryBooking>[] = [
 ]
 
 export function HistoryTable() {
+  const { slug } = useParams<{ slug: string }>()
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -145,7 +148,7 @@ export function HistoryTable() {
       return
     }
 
-    fetch(`/api/slug/history?phone=${encodeURIComponent(profile.phone)}`)
+    fetch(`/api/slug/history?phone=${encodeURIComponent(profile.phone)}&slug=${encodeURIComponent(slug)}`)
       .then((res) => res.json())
       .then(({ data }) => {
         const mapped: HistoryBooking[] = (data ?? []).map((b: any) => ({

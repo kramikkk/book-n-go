@@ -1,25 +1,31 @@
 "use client"
 
-import { useRef, useState } from "react"
+import * as React from "react"
 import { Camera } from "lucide-react"
 import { IconPhoto } from "@tabler/icons-react"
+import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { Button } from "./ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
 
 export const ProfileCard = () => {
-  const [preview, setPreview] = useState<string | null>(null)
-  const [isDirty, setIsDirty] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [preview, setPreview] = React.useState<string | null>(null)
+  const [isDirty, setIsDirty] = React.useState(false)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const [file, setFile] = React.useState<File | null>(null)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setPreview(URL.createObjectURL(file))
+    const f = e.target.files?.[0]
+    if (!f) return
+    setFile(f)
+    setPreview(URL.createObjectURL(f))
     setIsDirty(true)
   }
 
   const handleRemove = () => {
+    setFile(null)
     setPreview(null)
     if (inputRef.current) inputRef.current.value = ""
     setIsDirty(true)
@@ -31,9 +37,32 @@ export const ProfileCard = () => {
     setIsDirty(false)
   }
 
-  const handleSave = () => {
-    // TODO: persist changes
-    setIsDirty(false)
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      if (preview === null && isDirty) {
+        // User removed their avatar
+        const res = await fetch('/api/profile/avatar', { method: 'DELETE' })
+        if (!res.ok) throw new Error('Failed to remove avatar')
+        setAvatarUrl(null)
+        toast.success('Avatar removed')
+      } else if (file) {
+        // User uploaded a new file
+        const formData = new FormData()
+        formData.append('avatar', file)
+        const res = await fetch('/api/profile/avatar', { method: 'POST', body: formData })
+        if (!res.ok) throw new Error('Failed to upload avatar')
+        const { avatar_url: newUrl } = await res.json()
+        setAvatarUrl(newUrl)
+        toast.success('Avatar updated')
+      }
+      setIsDirty(false)
+      setFile(null)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -51,7 +80,7 @@ export const ProfileCard = () => {
         {/* Avatar */}
         <div className="relative shrink-0">
           <Avatar className="size-24">
-            <AvatarImage src={preview ?? undefined} />
+            <AvatarImage src={preview ?? avatarUrl ?? undefined} />
             <AvatarFallback className="text-2xl">BG</AvatarFallback>
           </Avatar>
           <button
@@ -103,10 +132,10 @@ export const ProfileCard = () => {
         <Button
           type="button"
           onClick={handleSave}
-          disabled={!isDirty}
+          disabled={!isDirty || isSaving}
           className={!isDirty ? "pointer-events-none opacity-0" : ""}
         >
-          Save
+          {isSaving ? "Saving..." : "Save"}
         </Button>
       </CardFooter>
     </Card>

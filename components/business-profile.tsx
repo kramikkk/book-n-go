@@ -1,8 +1,10 @@
 "use client"
 
+import * as React from "react"
 import { useRef, useState } from "react"
 import { Camera } from "lucide-react"
 import { IconBuildingStore } from "@tabler/icons-react"
+import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { Button } from "./ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
@@ -13,12 +15,15 @@ export const BusinessProfile = () => {
   const [preview, setPreview] = useState<string | null>(null)
   const [businessName, setBusinessName] = useState("")
   const [isDirty, setIsDirty] = useState(false)
+  const [file, setFile] = React.useState<File | null>(null)
+  const [isSaving, setIsSaving] = React.useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setPreview(URL.createObjectURL(file))
+    const f = e.target.files?.[0]
+    if (!f) return
+    setFile(f)
+    setPreview(URL.createObjectURL(f))
     setIsDirty(true)
   }
 
@@ -35,9 +40,41 @@ export const BusinessProfile = () => {
     setIsDirty(false)
   }
 
-  const handleSave = () => {
-    // TODO: persist changes
-    setIsDirty(false)
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      const ops: Promise<Response>[] = []
+
+      if (file) {
+        const formData = new FormData()
+        formData.append('logo', file)
+        ops.push(fetch('/api/admin/settings/logo', { method: 'POST', body: formData }))
+      } else if (preview === null && isDirty) {
+        ops.push(fetch('/api/admin/settings/logo', { method: 'DELETE' }))
+      }
+
+      if (businessName.trim()) {
+        ops.push(
+          fetch('/api/admin/settings', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ business_name: businessName.trim() }),
+          })
+        )
+      }
+
+      const results = await Promise.all(ops)
+      const failed = results.find((r) => !r.ok)
+      if (failed) throw new Error('One or more saves failed')
+
+      toast.success('Business profile updated')
+      setIsDirty(false)
+      setFile(null)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -120,10 +157,10 @@ export const BusinessProfile = () => {
         <Button
           type="button"
           onClick={handleSave}
-          disabled={!isDirty}
+          disabled={!isDirty || isSaving}
           className={!isDirty ? "pointer-events-none opacity-0" : ""}
         >
-          Save
+          {isSaving ? "Saving..." : "Save"}
         </Button>
       </CardFooter>
     </Card>

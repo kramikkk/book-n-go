@@ -98,7 +98,7 @@ export function BookingReceipt({ data }: { data: BookingReceiptData }) {
               </div>
             </div>
             <div style={{ borderTop: "1px dashed #000", margin: "6px 0" }} />
-            <div style={{ fontWeight: "bold", textAlign: "center", marginBottom: "4px", letterSpacing: "2px", fontSize: "11px" }}>*** APPOINTMENT ***</div>
+            <div style={{ fontWeight: "bold", textAlign: "center", marginBottom: "4px", letterSpacing: "2px", fontSize: "11px" }}>*** {data.bookingType.toUpperCase()} ***</div>
             <div style={{ display: "flex", justifyContent: "space-between" }}><span>DATE</span><span>{data.date.toLocaleDateString("default", { month: "short", day: "numeric", year: "numeric" })}</span></div>
             <div style={{ display: "flex", justifyContent: "space-between" }}><span>DAY</span><span>{data.date.toLocaleDateString("default", { weekday: "long" })}</span></div>
             <div style={{ display: "flex", justifyContent: "space-between" }}><span>TIME</span><span>{data.startTime} - {data.endTime}</span></div>

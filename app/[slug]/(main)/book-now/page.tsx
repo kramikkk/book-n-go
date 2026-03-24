@@ -9,7 +9,6 @@ import { ServiceSelector } from "@/components/service-selector"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TIME_SLOTS } from "@/lib/booking-constants"
-import { MOCK_BOOKED_DATES, MOCK_BOOKED_SLOTS } from "@/lib/mock-data"
 import { DEFAULT_SERVICES, getServicesConfig, type ServicesConfig } from "@/lib/services-config"
 import { getUserProfile, type UserProfile } from "@/lib/user-profile"
 import {
@@ -135,8 +134,8 @@ export default function BookNowPage() {
             startTime={bookingData.startTime}
             endTime={bookingData.endTime}
             bookingType={bookingData.bookingType}
-            bookedSlots={MOCK_BOOKED_SLOTS}
-            fullyBookedDates={MOCK_BOOKED_DATES}
+            bookedSlots={[]}
+            fullyBookedDates={[]}
             onDateChange={(date) => setBookingData((prev) => ({ ...prev, date }))}
             onStartTimeChange={(startTime) => setBookingData((prev) => ({ ...prev, startTime }))}
             onEndTimeChange={(endTime) => setBookingData((prev) => ({ ...prev, endTime }))}

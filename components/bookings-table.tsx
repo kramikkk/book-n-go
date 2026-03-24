@@ -38,10 +38,12 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-import { Booking } from "@/lib/schemas"
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type BookingRow = Record<string, any>
 
 interface BookingsTableProps {
-  bookings: Booking[]
+  bookings: BookingRow[]
+  onStatusChange?: (id: string, status: 'Completed' | 'Canceled') => void
 }
 
 const statusClass: Record<string, string> = {
@@ -51,7 +53,7 @@ const statusClass: Record<string, string> = {
   Confirmed: "border-blue-500 text-blue-600",
 }
 
-const columns: ColumnDef<Booking>[] = [
+const columns: ColumnDef<BookingRow>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -72,9 +74,9 @@ const columns: ColumnDef<Booking>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "ref",
+    accessorKey: "reference_number",
     header: "Booking Ref",
-    cell: ({ row }) => <span className="font-mono text-xs text-muted-foreground">{row.getValue("ref")}</span>,
+    cell: ({ row }) => <span className="font-mono text-xs text-muted-foreground">{row.getValue("reference_number")}</span>,
   },
   {
     accessorKey: "name",
@@ -84,11 +86,6 @@ const columns: ColumnDef<Booking>[] = [
       </Button>
     ),
     cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>,
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-    cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.getValue("email")}</span>,
   },
   {
     accessorKey: "contact",
@@ -101,14 +98,15 @@ const columns: ColumnDef<Booking>[] = [
         Date <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => (
-      <span>{row.original.date.toLocaleDateString("default", { month: "short", day: "numeric", year: "numeric" })}</span>
-    ),
+    cell: ({ row }) => {
+      const dateVal = row.getValue("date") as string
+      return <span>{new Date(dateVal).toLocaleDateString("default", { month: "short", day: "numeric", year: "numeric" })}</span>
+    },
   },
   {
     id: "time",
     header: "Time",
-    cell: ({ row }) => `${row.original.timeStart} – ${row.original.timeEnd}`,
+    cell: ({ row }) => `${row.original.time_start} – ${row.original.time_end}`,
   },
   {
     accessorKey: "type",
@@ -119,9 +117,9 @@ const columns: ColumnDef<Booking>[] = [
     ),
   },
   {
-    accessorKey: "service",
+    id: "service",
     header: "Service",
-    cell: ({ row }) => <span className="text-sm">{row.getValue("service")}</span>,
+    cell: ({ row }) => <span className="text-sm">{row.original.services?.label ?? "—"}</span>,
   },
   {
     accessorKey: "status",
@@ -151,7 +149,6 @@ const columns: ColumnDef<Booking>[] = [
         <DropdownMenuContent align="end">
           <div className="flex flex-col gap-0.5 px-2 py-1.5">
             <span className="text-xs font-medium">{row.original.name}</span>
-            <span className="text-xs text-muted-foreground">{row.original.email}</span>
             <span className="text-xs text-muted-foreground">{row.original.contact}</span>
           </div>
           <DropdownMenuSeparator />
@@ -166,10 +163,10 @@ const columns: ColumnDef<Booking>[] = [
   },
 ]
 
-export function BookingsTable({ bookings }: BookingsTableProps) {
+export function BookingsTable({ bookings, onStatusChange: _onStatusChange }: BookingsTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({ email: false, contact: false })
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
 
   const table = useReactTable({

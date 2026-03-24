@@ -2,57 +2,67 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server-admin";
 
 export async function POST(request: Request) {
-  console.log("/api/bookings POST hit");
   try {
     const supabase = createAdminClient();
     const body = await request.json();
+    const { slug } = body;
 
-    // 1. Format the Date
+    if (!slug) {
+      return NextResponse.json({ error: "slug required" }, { status: 400 });
+    }
+
+    const { data: settings, error: settingsError } = await supabase
+      .from("settings")
+      .select("admin_id")
+      .eq("slug", slug)
+      .single();
+
+    if (settingsError || !settings) {
+      return NextResponse.json({ error: "Business not found" }, { status: 404 });
+    }
+
+    const adminId = settings.admin_id;
+
     let safeDate = body.date;
     try {
       safeDate = new Date(body.date).toISOString().split('T')[0];
-    } catch (e) {
-      console.warn("Could not parse date:", body.date);
+    } catch {
+      // keep original if parse fails
     }
 
-    // 2. Format time_start
     let safeTimeStart = body.startTime;
-    if (safeTimeStart && safeTimeStart.includes('-')) {
+    if (safeTimeStart?.includes('-')) {
       safeTimeStart = safeTimeStart.split('-')[0].trim();
     }
 
-    // 3. Format time_end
     let safeTimeEnd = body.endTime;
-    if (safeTimeEnd && safeTimeEnd.includes('-')) {
+    if (safeTimeEnd?.includes('-')) {
       safeTimeEnd = safeTimeEnd.split('-')[0].trim();
     }
 
-    // 4. Insert
     const { data, error } = await supabase
       .from("bookings")
-      .insert([
-        {
-          name: body.name,
-          contact: body.phone,
-          date: safeDate,
-          time_start: safeTimeStart,
-          time_end: safeTimeEnd,
-          service_id: body.serviceId,
-          type: body.type,
-          status: "Pending",       
-        }
-      ])
+      .insert([{
+        admin_id: adminId,
+        reference_number: body.ref,
+        name: body.name,
+        contact: body.phone,
+        date: safeDate,
+        time_start: safeTimeStart,
+        time_end: safeTimeEnd,
+        service_id: body.serviceId,
+        type: body.type,
+        status: "Pending",
+      }])
       .select();
 
     if (error) {
-      console.error("Database Error:", error.message);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, data }, { status: 201 });
 
-  } catch (error: any) {
-    console.error("Server Error:", error);
+  } catch {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

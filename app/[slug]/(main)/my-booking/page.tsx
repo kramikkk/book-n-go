@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useSearchParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { BookingReceipt, type BookingReceiptData } from "@/components/booking-receipt"
 import { IconCalendarOff } from "@tabler/icons-react"
 import { getUserProfile } from "@/lib/user-profile"
@@ -45,6 +45,7 @@ function parseReceiptData(params: URLSearchParams): BookingReceiptData | null {
 }
 
 export default function MyBookingPage() {
+  const { slug } = useParams<{ slug: string }>()
   const searchParams = useSearchParams()
   const [data, setData] = React.useState<BookingReceiptData | null>(null)
   const [loading, setLoading] = React.useState(true)
@@ -65,14 +66,13 @@ export default function MyBookingPage() {
       return
     }
 
-    fetch(`/api/slug/my-booking?phone=${encodeURIComponent(profile.phone)}`)
+    fetch(`/api/slug/my-booking?phone=${encodeURIComponent(profile.phone)}&slug=${encodeURIComponent(slug)}`)
       .then((res) => res.json())
       .then(({ data: booking }) => {
         if (!booking) return
 
-        const profile = getUserProfile()
         const mapped: BookingReceiptData = {
-          bookingRef: booking.id,
+          bookingRef: booking.reference_number || booking.id,
           issuedAt: new Date(booking.created_at),
           date: new Date(booking.date),
           startTime: booking.time_start,
@@ -82,7 +82,7 @@ export default function MyBookingPage() {
           bookingType: booking.type,
           service: booking.service_id || undefined,
           fullName: booking.name,
-          email: profile?.email ?? "",
+          email: profile.email,
           phone: booking.contact,
         }
         setData(mapped)

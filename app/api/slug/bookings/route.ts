@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     const { data: settings, error: settingsError } = await supabase
       .from("settings")
-      .select("admin_id")
+      .select("client_id")
       .eq("slug", slug)
       .single();
 
@@ -21,15 +21,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const adminId = settings.admin_id;
+    const clientId = settings.client_id;
 
-    // Validate serviceId belongs to this admin (if provided)
+    // Validate serviceId belongs to this client (if provided)
     if (body.serviceId) {
       const { data: service, error: serviceError } = await supabase
         .from("services")
         .select("id")
         .eq("id", body.serviceId)
-        .eq("admin_id", adminId)
+        .eq("client_id", clientId)
         .maybeSingle();
 
       if (serviceError || !service) {
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabase
       .from("bookings")
       .insert([{
-        admin_id: adminId,
+        client_id: clientId,
         reference_number: body.ref,
         name: body.name,
         contact: body.phone,

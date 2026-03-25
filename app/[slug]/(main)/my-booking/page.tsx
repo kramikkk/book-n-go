@@ -4,7 +4,6 @@ import * as React from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { BookingReceipt, type BookingReceiptData } from "@/components/dashboard/booking-receipt"
 import { IconCalendarOff } from "@tabler/icons-react"
-import { getUserProfile } from "@/lib/user-profile"
 
 export default function MyBookingPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -28,22 +27,24 @@ export default function MyBookingPage() {
       return
     }
 
-    // Path 2: phone fallback (direct navigation to /my-booking)
-    const profile = getUserProfile()
-    if (!profile?.phone) {
-      setLoading(false)
-      return
-    }
-
-    fetch(`/api/slug/my-booking?phone=${encodeURIComponent(profile.phone)}&slug=${encodeURIComponent(slug)}`)
-      .then((res) => res.json())
-      .then(({ data: booking }) => {
-        if (!booking) return
-        // Pass profile.email as fallback since it's not stored in the booking row
-        setData(bookingToReceiptData(booking, profile.email))
+    // Path 2: phone fallback (direct navigation to /my-booking) — fetch from DB
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then(({ profile }) => {
+        if (!profile?.phone) {
+          setLoading(false)
+          return
+        }
+        fetch(`/api/slug/my-booking?phone=${encodeURIComponent(profile.phone)}&slug=${encodeURIComponent(slug)}`)
+          .then((res) => res.json())
+          .then(({ data: booking }) => {
+            if (!booking) return
+            setData(bookingToReceiptData(booking, profile.email ?? ""))
+          })
+          .catch((err) => console.error("Failed to fetch booking:", err))
+          .finally(() => setLoading(false))
       })
-      .catch((err) => console.error("Failed to fetch booking:", err))
-      .finally(() => setLoading(false))
+      .catch(() => setLoading(false))
   }, [slug, searchParams])
 
   if (loading) {

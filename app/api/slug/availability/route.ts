@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     // Resolve admin_id from slug
     const { data: settings, error: settingsError } = await supabase
       .from("settings")
-      .select("admin_id")
+      .select("client_id")
       .eq("slug", slug)
       .single();
 
@@ -24,14 +24,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const adminId = settings.admin_id;
+    const clientId = settings.client_id;
 
     // Mode 1: date provided → return booked slots for that date
     if (date) {
       const { data, error } = await supabase
         .from("bookings")
         .select("time_start")
-        .eq("admin_id", adminId)
+        .eq("client_id", clientId)
         .eq("date", date)
         .neq("status", "Canceled");
 
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
     const { data, error } = await supabase
       .from("bookings")
       .select("date, time_start")
-      .eq("admin_id", adminId)
+      .eq("client_id", clientId)
       .neq("status", "Canceled")
       .gte("date", todayStr)
       .lte("date", futureStr);

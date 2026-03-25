@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Label, Pie, PieChart } from "recharts"
-import { IconChartBar, IconChartPie } from "@tabler/icons-react"
+import { IconChartPie } from "@tabler/icons-react"
 import {
   Card,
   CardContent,
@@ -24,21 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-
-export const description = "A donut chart with text"
-
-const allChartData: Record<string, { status: string; count: number; fill: string }[]> = {
-  reservation: [
-    { status: "pending", count: 3, fill: "var(--color-pending)" },
-    { status: "cancelled", count: 1, fill: "var(--color-cancelled)" },
-    { status: "completed", count: 11, fill: "var(--color-completed)" },
-  ],
-  appointment: [
-    { status: "pending", count: 5, fill: "var(--color-pending)" },
-    { status: "cancelled", count: 2, fill: "var(--color-cancelled)" },
-    { status: "completed", count: 8, fill: "var(--color-completed)" },
-  ],
-}
+import type { PieChartData } from "@/app/api/client/dashboard/types"
 
 const chartConfig = {
   count: {
@@ -58,10 +44,10 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ChartPie({ data: _data }: { data?: unknown } = {}) {
+export function ChartPie({ data }: { data?: PieChartData | null }) {
   const [filter, setFilter] = React.useState<"reservation" | "appointment">("reservation")
 
-  const chartData = allChartData[filter]
+  const chartData = data?.[filter] ?? []
 
   const totalBookings = React.useMemo(() => {
     return chartData.reduce((acc, curr) => acc + curr.count, 0)

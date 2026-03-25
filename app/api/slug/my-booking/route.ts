@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
     const { data: settings, error: settingsError } = await supabase
       .from("settings")
-      .select("admin_id")
+      .select("client_id")
       .eq("slug", slug)
       .single();
 
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     let query = supabase
       .from("bookings")
       .select("*, services(label)")
-      .eq("admin_id", settings.admin_id)
+      .eq("client_id", settings.client_id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -38,14 +38,14 @@ export async function GET(request: Request) {
       query = supabase
         .from("bookings")
         .select("*, services(label)")
-        .eq("admin_id", settings.admin_id)
+        .eq("client_id", settings.client_id)
         .eq("reference_number", ref)
         .maybeSingle();
     } else {
       query = supabase
         .from("bookings")
         .select("*, services(label)")
-        .eq("admin_id", settings.admin_id)
+        .eq("client_id", settings.client_id)
         .eq("contact", phone!)
         .eq("status", "Pending")
         .order("created_at", { ascending: false })

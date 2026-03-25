@@ -16,7 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { getUserProfile, saveUserProfile } from "@/lib/user-profile"
 
 const schema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -31,32 +30,62 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+type Profile = {
+  first_name: string | null
+  middle_name: string | null
+  last_name: string | null
+  email: string | null
+  phone: string | null
+}
+
 export const PersonalInformation = ({
+  profile,
   onSubmit: onSubmitProp,
   formId,
 }: {
+  profile?: Profile | null
   onSubmit?: (values: FormValues) => void
   formId?: string
 }) => {
+  const [saveError, setSaveError] = React.useState("")
+  const [saveSuccess, setSaveSuccess] = React.useState(false)
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      email: "",
-      phone: "",
+      firstName:  profile?.first_name  ?? "",
+      middleName: profile?.middle_name ?? "",
+      lastName:   profile?.last_name   ?? "",
+      email:      profile?.email       ?? "",
+      phone:      profile?.phone       ?? "",
     },
   })
 
-  // Load saved profile into form on mount
-  React.useEffect(() => {
-    const profile = getUserProfile()
-    if (profile) form.reset(profile)
-  }, [form])
+  const onSubmit = async (values: FormValues) => {
+    setSaveError("")
+    setSaveSuccess(false)
 
-  const onSubmit = (values: FormValues) => {
-    saveUserProfile(values)
+    const res = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        first_name:  values.firstName,
+        middle_name: values.middleName || null,
+        last_name:   values.lastName,
+        email:       values.email,
+        phone:       values.phone,
+      }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setSaveError(data.error || "Failed to save profile")
+      return
+    }
+
+    setSaveSuccess(true)
+    form.reset(values)
     onSubmitProp?.(values)
   }
 
@@ -154,13 +183,17 @@ export const PersonalInformation = ({
                 />
               </div>
             </div>
+
+            {saveError   && <p className="text-sm text-red-500">{saveError}</p>}
+            {saveSuccess && <p className="text-sm text-green-600">Profile saved successfully.</p>}
           </CardContent>
+
           {!formId && (
             <CardFooter className="flex justify-end gap-2 pt-4">
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => form.reset()}
+                onClick={() => { form.reset(); setSaveError(""); setSaveSuccess(false) }}
                 disabled={!form.formState.isDirty}
                 className={!form.formState.isDirty ? "pointer-events-none opacity-0" : ""}
               >
@@ -168,10 +201,10 @@ export const PersonalInformation = ({
               </Button>
               <Button
                 type="submit"
-                disabled={!form.formState.isDirty}
+                disabled={!form.formState.isDirty || form.formState.isSubmitting}
                 className={!form.formState.isDirty ? "pointer-events-none opacity-0" : ""}
               >
-                Save
+                {form.formState.isSubmitting ? "Saving…" : "Save"}
               </Button>
             </CardFooter>
           )}

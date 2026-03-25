@@ -36,7 +36,6 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useParams } from "next/navigation"
-import { getUserProfile } from "@/lib/user-profile"
 
 type HistoryBooking = {
   ref: string
@@ -142,30 +141,34 @@ export function HistoryTable() {
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
-    const profile = getUserProfile()
-    if (!profile?.phone) {
-      setLoading(false)
-      return
-    }
-
-    fetch(`/api/slug/history?phone=${encodeURIComponent(profile.phone)}&slug=${encodeURIComponent(slug)}`)
-      .then((res) => res.json())
-      .then(({ data }) => {
-        const mapped: HistoryBooking[] = (data ?? []).map((b: any) => ({
-          ref: b.id,
-          business: "Main Branch",
-          date: b.date,
-          timeStart: b.time_start,
-          timeEnd: b.time_end,
-          type: b.type,
-          service: b.service_id,
-          status: b.status,
-        }))
-        setData(mapped)
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then(({ profile }) => {
+        if (!profile?.phone) {
+          setLoading(false)
+          return
+        }
+        fetch(`/api/slug/history?phone=${encodeURIComponent(profile.phone)}&slug=${encodeURIComponent(slug)}`)
+          .then((res) => res.json())
+          .then(({ data }) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const mapped: HistoryBooking[] = (data ?? []).map((b: any) => ({
+              ref: b.reference_number ?? b.id,
+              business: "Main Branch",
+              date: b.date,
+              timeStart: b.time_start,
+              timeEnd: b.time_end,
+              type: b.type,
+              service: b.services?.label ?? b.service_id ?? "—",
+              status: b.status,
+            }))
+            setData(mapped)
+          })
+          .catch((err) => console.error("Failed to fetch history:", err))
+          .finally(() => setLoading(false))
       })
-      .catch((err) => console.error("Failed to fetch history:", err))
-      .finally(() => setLoading(false))
-  }, [])
+      .catch(() => setLoading(false))
+  }, [slug])
 
   const table = useReactTable({
     data,

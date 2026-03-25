@@ -11,9 +11,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-export const BusinessProfile = () => {
+export const BusinessProfile = ({
+  businessName: initialBusinessName = "",
+  logoUrl: initialLogoUrl = null,
+}: {
+  businessName?: string
+  logoUrl?: string | null
+}) => {
   const [preview, setPreview] = useState<string | null>(null)
-  const [businessName, setBusinessName] = useState("")
+  const [logoUrl, setLogoUrl] = useState<string | null>(initialLogoUrl)
+  const [businessName, setBusinessName] = useState(initialBusinessName)
   const [isDirty, setIsDirty] = useState(false)
   const [file, setFile] = React.useState<File | null>(null)
   const [isSaving, setIsSaving] = React.useState(false)
@@ -29,13 +36,15 @@ export const BusinessProfile = () => {
 
   const handleRemove = () => {
     setPreview(null)
+    setFile(null)
     if (inputRef.current) inputRef.current.value = ""
     setIsDirty(true)
   }
 
   const handleCancel = () => {
     setPreview(null)
-    setBusinessName("")
+    setFile(null)
+    setBusinessName(initialBusinessName)
     if (inputRef.current) inputRef.current.value = ""
     setIsDirty(false)
   }
@@ -48,24 +57,24 @@ export const BusinessProfile = () => {
       if (file) {
         const formData = new FormData()
         formData.append('logo', file)
-        ops.push(fetch('/api/client/settings/logo', { method: 'POST', body: formData }))
-      } else if (preview === null && isDirty) {
-        ops.push(fetch('/api/client/settings/logo', { method: 'DELETE' }))
+        const res = await fetch('/api/client/settings/logo', { method: 'POST', body: formData })
+        if (!res.ok) throw new Error('Failed to upload logo')
+        const { logo_url: newUrl } = await res.json()
+        setLogoUrl(newUrl)
+      } else if (preview === null && isDirty && logoUrl) {
+        const res = await fetch('/api/client/settings/logo', { method: 'DELETE' })
+        if (!res.ok) throw new Error('Failed to remove logo')
+        setLogoUrl(null)
       }
 
-      if (businessName.trim()) {
-        ops.push(
-          fetch('/api/client/settings', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ business_name: businessName.trim() }),
-          })
-        )
+      if (businessName.trim() !== initialBusinessName) {
+        const res = await fetch('/api/client/settings', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ business_name: businessName.trim() }),
+        })
+        if (!res.ok) throw new Error('Failed to update business name')
       }
-
-      const results = await Promise.all(ops)
-      const failed = results.find((r) => !r.ok)
-      if (failed) throw new Error('One or more saves failed')
 
       toast.success('Business profile updated')
       setIsDirty(false)
@@ -93,7 +102,7 @@ export const BusinessProfile = () => {
           {/* Avatar */}
           <div className="relative shrink-0">
             <Avatar className="size-20">
-              <AvatarImage src={preview ?? undefined} />
+              <AvatarImage src={preview ?? logoUrl ?? undefined} />
               <AvatarFallback className="text-2xl">BL</AvatarFallback>
             </Avatar>
             <button

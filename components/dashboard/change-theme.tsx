@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -40,17 +41,50 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-export const ChangeTheme = () => {
+interface ChangeThemeProps {
+  primaryColor?: string
+}
+
+export const ChangeTheme = ({ primaryColor = "blue" }: ChangeThemeProps) => {
+  const [submitState, setSubmitState] = useState<"idle" | "loading" | "success" | "error">("idle")
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const validColor = colorSchemes.some((c) => c.value === primaryColor)
+    ? (primaryColor as FormValues["colorScheme"])
+    : "blue"
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       theme: "system",
-      colorScheme: "blue",
+      colorScheme: validColor,
     },
   })
 
-  const onSubmit = (values: FormValues) => {
-    console.log(values)
+  const isSubmitting = submitState === "loading"
+
+  const onSubmit = async (values: FormValues) => {
+    setSubmitState("loading")
+    setErrorMessage(null)
+
+    try {
+      const res = await fetch("/api/client/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ primary_color: values.colorScheme }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body?.error ?? "Failed to save theme")
+      }
+
+      setSubmitState("success")
+      form.reset(values)
+    } catch (err) {
+      setSubmitState("error")
+      setErrorMessage(err instanceof Error ? err.message : "Something went wrong")
+    }
   }
 
   return (
@@ -135,23 +169,31 @@ export const ChangeTheme = () => {
               )}
             />
 
+            {/* Inline feedback */}
+            {submitState === "success" && (
+              <p className="text-sm text-green-600 font-medium">Theme saved successfully.</p>
+            )}
+            {submitState === "error" && (
+              <p className="text-sm text-red-500 font-medium">{errorMessage}</p>
+            )}
+
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
             <Button
               type="button"
               variant="ghost"
               onClick={() => form.reset()}
-              disabled={!form.formState.isDirty}
+              disabled={!form.formState.isDirty || isSubmitting}
               className={!form.formState.isDirty ? "pointer-events-none opacity-0" : ""}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={!form.formState.isDirty}
+              disabled={!form.formState.isDirty || isSubmitting}
               className={!form.formState.isDirty ? "pointer-events-none opacity-0" : ""}
             >
-              Apply Theme
+              {isSubmitting ? "Applying…" : "Apply Theme"}
             </Button>
           </CardFooter>
         </form>

@@ -62,16 +62,20 @@ export async function updateSession(request: NextRequest) {
     error,
   } = await supabase.auth.getUser()
 
-  // Not logged in — redirect to login
+  // Not logged in — clear stale cookies and redirect to login
   if (error || !user) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const redirectResponse = NextResponse.redirect(new URL('/login', request.url))
+    request.cookies.getAll().forEach(({ name }) => {
+      if (name.startsWith('sb-')) redirectResponse.cookies.delete(name)
+    })
+    return redirectResponse
   }
 
   
   const role = user.app_metadata?.role
 
-  // Client routes — only admins allowed
-  if (pathname.startsWith('/client') && role !== 'admin') {
+  // Client routes — only clients allowed
+  if (pathname.startsWith('/client') && role !== 'client') {
     return NextResponse.redirect(new URL('/customer/dashboard', request.url))
   }
 

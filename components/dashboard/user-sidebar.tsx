@@ -26,12 +26,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const userData = {
-  name: "Book N. Go",
-  email: "BookNGo@gmail.com",
-  avatar: "/BNGCircleTransparent.png",
-}
-
 function getNavItems(slug: string) {
   return [
     {
@@ -57,7 +51,16 @@ function getNavItems(slug: string) {
   ]
 }
 
-export function UserSidebar({ slug, ...props }: React.ComponentProps<typeof Sidebar> & { slug: string }) {
+export function UserSidebar({
+  slug,
+  user,
+  logoutRedirect,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  slug: string
+  user: { name: string; email: string; avatar: string }
+  logoutRedirect?: string
+}) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -87,7 +90,7 @@ export function UserSidebar({ slug, ...props }: React.ComponentProps<typeof Side
         <NavMain items={getNavItems(slug)} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={userData} />
+        <NavUser user={user} logoutRedirect={logoutRedirect} />
       </SidebarFooter>
     </Sidebar>
   )

@@ -1,10 +1,12 @@
 "use client"
 
+import * as React from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { IconLock } from "@tabler/icons-react"
+import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -39,8 +41,32 @@ export const ChangePassword = () => {
     },
   })
 
-  const onSubmit = (values: FormValues) => {
-    console.log(values)
+  const [error, setError] = React.useState("")
+  const [success, setSuccess] = React.useState(false)
+  const [show, setShow] = React.useState({ current: false, new: false, confirm: false })
+
+  const onSubmit = async (values: FormValues) => {
+    setError("")
+    setSuccess(false)
+
+    const res = await fetch("/api/auth/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+      }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setError(data.error || "Failed to update password")
+      return
+    }
+
+    setSuccess(true)
+    form.reset()
   }
 
   return (
@@ -66,7 +92,12 @@ export const ChangePassword = () => {
                 <FormItem>
                   <FormLabel>Current Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <div className="relative">
+                      <Input type={show.current ? "text" : "password"} placeholder="Enter current password" className="pr-10" {...field} />
+                      <button type="button" onClick={() => setShow((s) => ({ ...s, current: !s.current }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                        {show.current ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -79,7 +110,12 @@ export const ChangePassword = () => {
                 <FormItem>
                   <FormLabel>New Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <div className="relative">
+                      <Input type={show.new ? "text" : "password"} placeholder="Enter new password" className="pr-10" {...field} />
+                      <button type="button" onClick={() => setShow((s) => ({ ...s, new: !s.new }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                        {show.new ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -92,12 +128,19 @@ export const ChangePassword = () => {
                 <FormItem>
                   <FormLabel>Confirm New Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <div className="relative">
+                      <Input type={show.confirm ? "text" : "password"} placeholder="Confirm new password" className="pr-10" {...field} />
+                      <button type="button" onClick={() => setShow((s) => ({ ...s, confirm: !s.confirm }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                        {show.confirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            {error   && <p className="text-sm text-red-500">{error}</p>}
+            {success && <p className="text-sm text-green-600">Password updated successfully.</p>}
           </CardContent>
           <CardFooter className="flex justify-end gap-2 pt-4">
             <Button
@@ -111,10 +154,10 @@ export const ChangePassword = () => {
             </Button>
             <Button
               type="submit"
-              disabled={!form.formState.isDirty}
+              disabled={!form.formState.isDirty || form.formState.isSubmitting}
               className={!form.formState.isDirty ? "pointer-events-none opacity-0" : ""}
             >
-              Update Password
+              {form.formState.isSubmitting ? "Updating…" : "Update Password"}
             </Button>
           </CardFooter>
         </form>

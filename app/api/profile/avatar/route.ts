@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/server-admin'
 import { NextResponse }  from 'next/server'
 
 // ─── POST /api/profile/avatar ─────────────────────────────────────────────────
@@ -57,7 +58,9 @@ export async function POST(request: Request) {
     const fileName = `${user.id}/avatar.${fileExt}`
     const buffer   = await file.arrayBuffer()
 
-    const { error: uploadError } = await supabase.storage
+    const adminClient = createAdminClient()
+
+    const { error: uploadError } = await adminClient.storage
       .from('avatars')
       .upload(fileName, buffer, {
         contentType: file.type,
@@ -65,19 +68,25 @@ export async function POST(request: Request) {
       })
 
     if (uploadError) {
-      return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 })
+      console.error('[avatar upload] storage error:', uploadError.message)
+      return NextResponse.json({ error: uploadError.message }, { status: 500 })
     }
 
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = adminClient.storage
       .from('avatars')
       .getPublicUrl(fileName)
 
+    // Append cache-busting timestamp so the browser always loads the new image
+    // even though the filename stays the same across uploads.
+    const avatarUrl = `${publicUrl}?t=${Date.now()}`
+
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ avatar_url: publicUrl })
+      .update({ avatar_url: avatarUrl })
       .eq('id', user.id)
 
     if (profileError) {
+      console.error('[avatar upload] profile update failed:', profileError.message)
       return NextResponse.json(
         { error: 'Image uploaded but failed to update profile' },
         { status: 500 }
@@ -85,10 +94,11 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { message: 'Avatar updated successfully', avatar_url: publicUrl },
+      { message: 'Avatar updated successfully', avatar_url: avatarUrl },
       { status: 200 }
     )
-  } catch {
+  } catch (err) {
+    console.error('[avatar upload] unexpected error:', err)
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
 }
@@ -102,8 +112,6 @@ export async function POST(request: Request) {
 // Response 200:
 //   { message: string }
 
-const DEFAULT_AVATAR = 'default-avatar.png'
-
 export async function DELETE() {
   try {
     const supabase = await createClient()
@@ -113,20 +121,17 @@ export async function DELETE() {
       return NextResponse.json({ error: 'You must be logged in' }, { status: 401 })
     }
 
-    // Remove every possible extension — we derive paths from MIME_TO_EXT so
-    // this list stays in sync if new types are ever added.
+    const adminClient = createAdminClient()
+
     const paths = Object.values(MIME_TO_EXT).map((ext) => `${user.id}/avatar.${ext}`)
-    const { error: storageError } = await supabase.storage.from('avatars').remove(paths)
+    const { error: storageError } = await adminClient.storage.from('avatars').remove(paths)
     if (storageError) {
-      // Non-fatal: the DB will still be reset to default. Log for cleanup.
       console.warn('[avatar delete] storage cleanup failed:', storageError.message)
     }
 
-    // Reset profile back to the default avatar regardless of whether the
-    // storage delete found anything — the important thing is the DB is clean.
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ avatar_url: DEFAULT_AVATAR })
+      .update({ avatar_url: null })
       .eq('id', user.id)
 
     if (profileError) {
@@ -140,7 +145,8 @@ export async function DELETE() {
       { message: 'Avatar removed successfully' },
       { status: 200 }
     )
-  } catch {
+  } catch (err) {
+    console.error('[avatar delete] unexpected error:', err)
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
 }

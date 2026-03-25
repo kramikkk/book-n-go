@@ -27,14 +27,14 @@ export default async function DashboardPage() {
       .from("bookings")
       .select(`id, name, contact, date, time_start, time_end, type, status, created_at,
         profiles!bookings_customer_id_fkey ( id, first_name, last_name, email )`)
-      .eq("admin_id", user!.id)
+      .eq("client_id", user!.id)
       .gte("date", dateLimit)
       .order("date", { ascending: true })
       .order("time_start", { ascending: true }),
     supabase
       .from("bookings")
       .select("*", { count: "exact", head: true })
-      .eq("admin_id", user!.id),
+      .eq("client_id", user!.id),
   ])
 
   if (dbError) {

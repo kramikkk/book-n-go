@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { DEFAULT_SERVICES, getServicesConfig, saveServicesConfig, type ServiceOption, type ServicesConfig } from "@/lib/services-config"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,55 +8,112 @@ import { IconCalendarEvent, IconClipboardList, IconGripVertical, IconPlus, IconT
 
 type Tab = "appointment" | "reservation"
 
+type Service = {
+  id: string
+  type: string
+  label: string
+  description: string | null
+  sort_order: number
+}
+
 export function ServicesManager() {
-  const [config, setConfig] = React.useState<ServicesConfig>(DEFAULT_SERVICES)
+  const [services, setServices] = React.useState<Service[]>([])
   const [tab, setTab] = React.useState<Tab>("appointment")
   const [newLabel, setNewLabel] = React.useState("")
   const [newDesc, setNewDesc] = React.useState("")
-  const [saved, setSaved] = React.useState(false)
+  const [dirty, setDirty] = React.useState<Set<string>>(new Set())
+  const [saving, setSaving] = React.useState(false)
+  const [adding, setAdding] = React.useState(false)
+  const [error, setError] = React.useState("")
+  const [success, setSuccess] = React.useState(false)
+  const [loading, setLoading] = React.useState(true)
 
+  // Fetch services on mount
   React.useEffect(() => {
-    setConfig(getServicesConfig())
+    fetch("/api/client/services")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.services) {
+          const all = [...(data.services.appointment ?? []), ...(data.services.reservation ?? [])]
+          setServices(all)
+        }
+      })
+      .finally(() => setLoading(false))
   }, [])
 
-  const services = config[tab]
-
-  const handleAdd = () => {
-    const label = newLabel.trim()
-    if (!label) return
-    const id = label.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
-    const option: ServiceOption = { id: `${id}-${Date.now()}`, label, ...(newDesc.trim() ? { description: newDesc.trim() } : {}) }
-    setConfig((prev) => ({ ...prev, [tab]: [...prev[tab], option] }))
-    setNewLabel("")
-    setNewDesc("")
-  }
-
-  const handleRemove = (id: string) => {
-    setConfig((prev) => ({ ...prev, [tab]: prev[tab].filter((s) => s.id !== id) }))
-  }
+  const tabServices = services.filter((s) => s.type === tab)
 
   const handleLabelChange = (id: string, value: string) => {
-    setConfig((prev) => ({
-      ...prev,
-      [tab]: prev[tab].map((s) => (s.id === id ? { ...s, label: value } : s)),
-    }))
+    setServices((prev) => prev.map((s) => s.id === id ? { ...s, label: value } : s))
+    setDirty((prev) => new Set(prev).add(id))
   }
 
   const handleDescChange = (id: string, value: string) => {
-    setConfig((prev) => ({
-      ...prev,
-      [tab]: prev[tab].map((s) => (s.id === id ? { ...s, description: value } : s)),
-    }))
+    setServices((prev) => prev.map((s) => s.id === id ? { ...s, description: value } : s))
+    setDirty((prev) => new Set(prev).add(id))
   }
 
-  const handleSave = () => {
-    saveServicesConfig(config)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  const handleAdd = async () => {
+    const label = newLabel.trim()
+    if (!label) return
+    setAdding(true)
+    setError("")
+
+    const res = await fetch("/api/client/services", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: tab, label, description: newDesc.trim() || null }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) {
+      setError(data.error || "Failed to add service")
+    } else {
+      setServices((prev) => [...prev, data.service])
+      setNewLabel("")
+      setNewDesc("")
+    }
+    setAdding(false)
   }
 
-  const handleReset = () => {
-    setConfig(DEFAULT_SERVICES)
+  const handleRemove = async (id: string) => {
+    const res = await fetch(`/api/client/services/${id}`, { method: "DELETE" })
+    if (res.ok) {
+      setServices((prev) => prev.filter((s) => s.id !== id))
+      setDirty((prev) => { const next = new Set(prev); next.delete(id); return next })
+    } else {
+      const data = await res.json()
+      setError(data.error || "Failed to delete service")
+    }
+  }
+
+  const handleSave = async () => {
+    if (dirty.size === 0) return
+    setSaving(true)
+    setError("")
+    setSuccess(false)
+
+    const updates = services.filter((s) => dirty.has(s.id))
+
+    const results = await Promise.all(
+      updates.map((s) =>
+        fetch(`/api/client/services/${s.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ label: s.label, description: s.description || null }),
+        })
+      )
+    )
+
+    const failed = results.find((r) => !r.ok)
+    if (failed) {
+      setError("Failed to save some changes")
+    } else {
+      setDirty(new Set())
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 2000)
+    }
+    setSaving(false)
   }
 
   const tabs: { key: Tab; label: string; Icon: React.ElementType }[] = [
@@ -100,10 +156,11 @@ export function ServicesManager() {
 
         {/* Service list */}
         <div className="flex flex-col gap-2">
-          {services.length === 0 && (
+          {loading && <p className="py-2 text-center text-sm text-muted-foreground">Loading…</p>}
+          {!loading && tabServices.length === 0 && (
             <p className="py-2 text-center text-sm text-muted-foreground">No services yet. Add one below.</p>
           )}
-          {services.map((service) => (
+          {tabServices.map((service) => (
             <div key={service.id} className="flex items-start gap-2 rounded-lg border p-3">
               <IconGripVertical className="mt-0.5 size-4 shrink-0 cursor-grab text-muted-foreground/50" />
               <div className="flex flex-1 flex-col gap-1.5">
@@ -151,28 +208,25 @@ export function ServicesManager() {
             size="sm"
             variant="outline"
             onClick={handleAdd}
-            disabled={!newLabel.trim()}
+            disabled={!newLabel.trim() || adding}
             className="gap-1.5"
           >
             <IconPlus className="size-3.5" />
-            Add Service
+            {adding ? "Adding…" : "Add Service"}
           </Button>
         </div>
 
+        {error && <p className="text-sm text-red-500">{error}</p>}
+
         {/* Actions */}
-        <div className="mt-auto flex items-center justify-between gap-2">
-          <button
-            onClick={handleReset}
-            className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Reset to defaults
-          </button>
+        <div className="mt-auto flex justify-end">
           <Button
             size="sm"
             onClick={handleSave}
-            className={saved ? "bg-green-600 hover:bg-green-600" : "bg-[#3A79C3] hover:bg-[#3164a8]"}
+            disabled={dirty.size === 0 || saving}
+            className={success ? "bg-green-600 hover:bg-green-600" : "bg-[#3A79C3] hover:bg-[#3164a8]"}
           >
-            {saved ? "Saved!" : "Save Changes"}
+            {saving ? "Saving…" : success ? "Saved!" : "Save Changes"}
           </Button>
         </div>
       </CardContent>

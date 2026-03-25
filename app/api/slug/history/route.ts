@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
     const { data: settings, error: settingsError } = await supabase
       .from("settings")
-      .select("admin_id")
+      .select("client_id")
       .eq("slug", slug)
       .single();
 
@@ -28,9 +28,9 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabase
       .from("bookings")
-      .select("*")
+      .select("*, services(label)")
       .eq("contact", phone)
-      .eq("admin_id", settings.admin_id)
+      .eq("client_id", settings.client_id)
       .order("date", { ascending: false });
 
     if (error) {

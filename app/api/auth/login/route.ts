@@ -34,6 +34,7 @@ export async function POST(request: Request) {
     })
 
     if (authError) {
+      console.error('[login] signInWithPassword error:', authError.message, authError.code)
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }

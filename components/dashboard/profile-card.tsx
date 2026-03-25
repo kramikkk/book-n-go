@@ -4,17 +4,23 @@ import * as React from "react"
 import { Camera } from "lucide-react"
 import { IconPhoto } from "@tabler/icons-react"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
-export const ProfileCard = () => {
+export const ProfileCard = ({
+  avatarUrl: initialAvatarUrl,
+}: {
+  avatarUrl?: string | null
+}) => {
+  const router = useRouter()
   const [preview, setPreview] = React.useState<string | null>(null)
   const [isDirty, setIsDirty] = React.useState(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [file, setFile] = React.useState<File | null>(null)
   const [isSaving, setIsSaving] = React.useState(false)
-  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl] = React.useState<string | null>(initialAvatarUrl ?? null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
@@ -58,6 +64,7 @@ export const ProfileCard = () => {
       }
       setIsDirty(false)
       setFile(null)
+      router.refresh()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong')
     } finally {

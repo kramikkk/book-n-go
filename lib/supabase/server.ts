@@ -32,7 +32,7 @@ export async function requireClient() {
     return { error: 'Unauthorized', status: 401, supabase, user: null }
   }
   
-  if (user.app_metadata?.role !== 'admin') {
+  if (user.app_metadata?.role !== 'client') {
     return { error: 'Forbidden', status: 403, supabase, user: null }
   }
   

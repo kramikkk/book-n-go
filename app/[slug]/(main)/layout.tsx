@@ -1,10 +1,12 @@
 import React from "react"
 import Image from "next/image"
 import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 
 import { SiteHeader } from "@/components/dashboard/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { UserSidebar } from "@/components/dashboard/user-sidebar"
+import { createClient } from "@/lib/supabase/server"
 
 export default async function MainLayout({
   children,
@@ -18,6 +20,20 @@ export default async function MainLayout({
   const sidebarState = cookieStore.get("sidebar_state")?.value
   const defaultOpen = sidebarState !== "false"
 
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect(`/${slug}`)
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("first_name, last_name, email, avatar_url")
+    .eq("id", user.id)
+    .single()
+
+  const name   = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Customer"
+  const email  = profile?.email ?? ""
+  const avatar = profile?.avatar_url ?? ""
+
   return (
     <SidebarProvider
       defaultOpen={defaultOpen}
@@ -28,9 +44,9 @@ export default async function MainLayout({
         } as React.CSSProperties
       }
     >
-      <UserSidebar slug={slug} variant="inset" />
+      <UserSidebar slug={slug} user={{ name, email, avatar }} logoutRedirect={`/${slug}`} variant="inset" />
       <SidebarInset>
-        <SiteHeader />
+        <SiteHeader user={{ name, email, avatar }} logoutRedirect={`/${slug}`} />
         <div className="relative flex-1">
           <Image
             src="/WaveBG.png"

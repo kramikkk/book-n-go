@@ -11,8 +11,7 @@ import { ServiceSelector } from "@/components/dashboard/service-selector"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TIME_SLOTS } from "@/lib/booking-constants"
-import { DEFAULT_SERVICES, getServicesConfig, type ServicesConfig } from "@/lib/services-config"
-import { getUserProfile, type UserProfile } from "@/lib/user-profile"
+import type { ServicesConfig } from "@/lib/services-config"
 import {
   IconArrowLeft,
   IconArrowRight,
@@ -36,6 +35,14 @@ type BookingData = {
   bookingType: "Appointment" | "Reservation"
 }
 
+type Profile = {
+  first_name: string | null
+  middle_name: string | null
+  last_name: string | null
+  email: string | null
+  phone: string | null
+}
+
 export default function BookNowPage() {
   const { slug } = useParams<{ slug: string }>()
   const router = useRouter()
@@ -46,15 +53,25 @@ export default function BookNowPage() {
     date: undefined, startTime: null, endTime: null, bookingType: "Appointment",
   })
   const [selectedService, setSelectedService] = React.useState<string | null>(null)
-  const [servicesConfig, setServicesConfig] = React.useState<ServicesConfig>(DEFAULT_SERVICES)
-  const [profile, setProfile] = React.useState<UserProfile | null>(null)
+  const [servicesConfig, setServicesConfig] = React.useState<ServicesConfig>({ appointment: [], reservation: [] })
+  const [profile, setProfile] = React.useState<Profile | null>(null)
   const [bookedSlots, setBookedSlots] = React.useState<string[]>([])
   const [fullyBookedDates, setFullyBookedDates] = React.useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   React.useEffect(() => {
-    setServicesConfig(getServicesConfig())
-    setProfile(getUserProfile())
+    // Fetch logged-in user profile
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then(({ profile }) => { if (profile) setProfile(profile) })
+      .catch(() => {})
+
+    // Fetch services for this business
+    fetch(`/api/slug/services?slug=${encodeURIComponent(slug)}`)
+      .then((r) => r.json())
+      .then(({ services }) => { if (services) setServicesConfig(services) })
+      .catch(() => {})
+
     // Fetch fully booked dates for the next 30 days
     fetch(`/api/slug/availability?slug=${encodeURIComponent(slug)}`)
       .then((r) => r.json())
@@ -93,7 +110,7 @@ export default function BookNowPage() {
   )
 
   const fullName = profile
-    ? [profile.firstName, profile.middleName, profile.lastName].filter(Boolean).join(" ")
+    ? [profile.first_name, profile.middle_name, profile.last_name].filter(Boolean).join(" ")
     : ""
 
   const duration = React.useMemo(() => {
@@ -119,7 +136,7 @@ export default function BookNowPage() {
           slug,
           ref,
           name: fullName,
-          phone: profile.phone,
+          phone: profile.phone ?? "",
           date: format(bookingData.date, "yyyy-MM-dd"),
           startTime: bookingData.startTime,
           endTime: bookingData.endTime,
@@ -219,7 +236,7 @@ export default function BookNowPage() {
                     <div className="flex items-center gap-3 px-4 py-2.5 text-sm">
                       <IconPhone className="size-4 shrink-0 text-[#3A79C3]" />
                       <span className="text-muted-foreground">Phone</span>
-                      <span className="ml-auto font-medium">{profile.phone}</span>
+                      <span className="ml-auto font-medium">{profile.phone ?? "—"}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -321,12 +338,12 @@ export default function BookNowPage() {
                   <div className="flex items-center gap-3 px-4 py-3 text-sm">
                     <IconMail className="size-4 shrink-0 text-[#3A79C3]" />
                     <span className="text-muted-foreground">Email</span>
-                    <span className="ml-auto font-semibold">{profile.email}</span>
+                    <span className="ml-auto font-semibold">{profile.email ?? "—"}</span>
                   </div>
                   <div className="flex items-center gap-3 px-4 py-3 text-sm">
                     <IconPhone className="size-4 shrink-0 text-[#3A79C3]" />
                     <span className="text-muted-foreground">Phone</span>
-                    <span className="ml-auto font-semibold">{profile.phone}</span>
+                    <span className="ml-auto font-semibold">{profile.phone ?? "—"}</span>
                   </div>
                 </div>
               </div>

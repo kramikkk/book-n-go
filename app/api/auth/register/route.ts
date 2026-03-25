@@ -1,5 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server-admin'
 import { NextResponse }  from 'next/server'
 
 // ─── POST /api/auth/register ──────────────────────────────────────────────────
@@ -54,28 +53,40 @@ export async function POST(request: Request) {
       )
     }
 
-    const supabase = await createClient()
+    const adminClient = createAdminClient()
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: trimmedEmail,
-      password,
-      options: {
-        data: { role: 'customer' },
-      },
-    })
+    // Check if email already exists before attempting to create
+    const { data: existing } = await adminClient
+      .from('profiles')
+      .select('id')
+      .eq('email', trimmedEmail)
+      .maybeSingle()
 
-    if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 })
-    }
-
-    if (!authData.user || authData.user.identities?.length === 0) {
+    if (existing) {
       return NextResponse.json(
         { error: 'An account with this email already exists' },
         { status: 409 }
       )
     }
 
-    const { error: profileError } = await supabase
+    // Use admin createUser with email_confirm:true to skip confirmation email
+    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+      email: trimmedEmail,
+      password,
+      email_confirm: true,
+      app_metadata: { role: 'customer' },
+    })
+
+    if (authError) {
+      console.error('[register] createUser error:', authError.message)
+      return NextResponse.json({ error: authError.message }, { status: 400 })
+    }
+
+    if (!authData.user) {
+      return NextResponse.json({ error: 'Failed to create account' }, { status: 500 })
+    }
+
+    const { error: profileError } = await adminClient
       .from('profiles')
       .update({
         first_name:  trimmedFirstName,
@@ -89,10 +100,6 @@ export async function POST(request: Request) {
 
     if (profileError) {
       try {
-        const adminClient = createAdminClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!
-        )
         await adminClient.auth.admin.deleteUser(authData.user.id)
       } catch {
         console.error('[register] orphaned auth user — delete manually:', authData.user.id)
@@ -102,10 +109,11 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { message: 'Account created successfully! Please check your email to verify your account.' },
+      { message: 'Account created successfully! You can now sign in.' },
       { status: 201 }
     )
-  } catch {
+  } catch (err) {
+    console.error('[register] unexpected error:', err)
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
 }

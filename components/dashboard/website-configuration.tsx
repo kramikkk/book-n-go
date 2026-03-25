@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -30,21 +31,53 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-export const WebsiteConfiguration = () => {
+type Settings = {
+  slug: string | null
+  welcome_message: string | null
+  seo_title: string | null
+  seo_description: string | null
+}
+
+export const WebsiteConfiguration = ({ settings }: { settings?: Settings | null }) => {
+  const [error, setError] = React.useState("")
+  const [success, setSuccess] = React.useState(false)
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      slug: "",
-      welcomeMessage: "",
-      seoTitle: "",
-      seoDescription: "",
+      slug:           settings?.slug            ?? "",
+      welcomeMessage: settings?.welcome_message ?? "",
+      seoTitle:       settings?.seo_title       ?? "",
+      seoDescription: settings?.seo_description ?? "",
     },
   })
 
   const slug = form.watch("slug")
 
-  const onSubmit = (values: FormValues) => {
-    console.log(values)
+  const onSubmit = async (values: FormValues) => {
+    setError("")
+    setSuccess(false)
+
+    const res = await fetch("/api/client/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slug:                values.slug,
+        welcome_message:     values.welcomeMessage  || null,
+        seo_title:           values.seoTitle        || null,
+        seo_description:     values.seoDescription  || null,
+      }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setError(data.error || "Failed to save settings")
+      return
+    }
+
+    setSuccess(true)
+    form.reset(values)
   }
 
   return (
@@ -87,7 +120,19 @@ export const WebsiteConfiguration = () => {
                         </div>
                       </FormControl>
                       <FormDescription>
-                        Your page: bookngo.com/{slug || "my-business"}
+                        Your page:{" "}
+                        {slug ? (
+                          <a
+                            href={`/${slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 underline hover:text-blue-700"
+                          >
+                            bookngo.com/{slug}
+                          </a>
+                        ) : (
+                          <span>bookngo.com/my-business</span>
+                        )}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -145,12 +190,15 @@ export const WebsiteConfiguration = () => {
               </div>
             </div>
 
+            {error   && <p className="text-sm text-red-500">{error}</p>}
+            {success && <p className="text-sm text-green-600">Settings saved successfully.</p>}
+
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
             <Button
               type="button"
               variant="ghost"
-              onClick={() => form.reset()}
+              onClick={() => { form.reset(); setError(""); setSuccess(false) }}
               disabled={!form.formState.isDirty}
               className={!form.formState.isDirty ? "pointer-events-none opacity-0" : ""}
             >
@@ -158,10 +206,10 @@ export const WebsiteConfiguration = () => {
             </Button>
             <Button
               type="submit"
-              disabled={!form.formState.isDirty}
+              disabled={!form.formState.isDirty || form.formState.isSubmitting}
               className={!form.formState.isDirty ? "pointer-events-none opacity-0" : ""}
             >
-              Save
+              {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </CardFooter>
         </form>

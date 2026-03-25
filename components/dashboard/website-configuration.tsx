@@ -24,7 +24,8 @@ const schema = z.object({
     .min(3, "Slug must be at least 3 characters")
     .max(50, "Slug must be 50 characters or less")
     .regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
-  welcomeMessage: z.string().max(300, "Max 300 characters").optional(),
+  landingTitle:    z.string().max(100, "Max 100 characters").optional(),
+  landingSubtitle: z.string().max(200, "Max 200 characters").optional(),
   seoTitle: z.string().max(60, "Max 60 characters").optional(),
   seoDescription: z.string().max(160, "Max 160 characters").optional(),
 })
@@ -42,13 +43,17 @@ export const WebsiteConfiguration = ({ settings }: { settings?: Settings | null 
   const [error, setError] = React.useState("")
   const [success, setSuccess] = React.useState(false)
 
+  // welcome_message stores "title||subtitle" — split on load
+  const [storedTitle, storedSubtitle] = (settings?.welcome_message ?? "").split("||")
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      slug:           settings?.slug            ?? "",
-      welcomeMessage: settings?.welcome_message ?? "",
-      seoTitle:       settings?.seo_title       ?? "",
-      seoDescription: settings?.seo_description ?? "",
+      slug:            settings?.slug   ?? "",
+      landingTitle:    storedTitle      ?? "",
+      landingSubtitle: storedSubtitle   ?? "",
+      seoTitle:        settings?.seo_title       ?? "",
+      seoDescription:  settings?.seo_description ?? "",
     },
   })
 
@@ -62,10 +67,12 @@ export const WebsiteConfiguration = ({ settings }: { settings?: Settings | null 
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        slug:                values.slug,
-        welcome_message:     values.welcomeMessage  || null,
-        seo_title:           values.seoTitle        || null,
-        seo_description:     values.seoDescription  || null,
+        slug:            values.slug,
+        welcome_message: values.landingTitle || values.landingSubtitle
+          ? `${values.landingTitle ?? ""}||${values.landingSubtitle ?? ""}`
+          : null,
+        seo_title:       values.seoTitle       || null,
+        seo_description: values.seoDescription || null,
       }),
     })
 
@@ -140,14 +147,28 @@ export const WebsiteConfiguration = ({ settings }: { settings?: Settings | null 
                 />
                 <FormField
                   control={form.control}
-                  name="welcomeMessage"
+                  name="landingTitle"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Welcome Message</FormLabel>
+                      <FormLabel>Landing Title</FormLabel>
                       <FormControl>
-                        <Input placeholder="Welcome! Book your appointment with us today." {...field} />
+                        <Input placeholder="Elevate your booking experience." {...field} />
                       </FormControl>
-                      <FormDescription>Shown at the top of your booking page.</FormDescription>
+                      <FormDescription>The big heading on the left side of your login page.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="landingSubtitle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Landing Subtitle</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Sign in or create an account to book an appointment." {...field} />
+                      </FormControl>
+                      <FormDescription>The smaller text below the heading.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

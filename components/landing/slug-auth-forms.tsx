@@ -114,8 +114,8 @@ export function SlugAuthForms({ slug }: SlugAuthFormsProps) {
   return (
     <div className="w-full max-w-sm flex flex-col gap-5">
       {/* Heading */}
-      <div className="flex flex-col gap-1 text-center">
-        <h2 className="text-2xl font-bold text-foreground">
+      <div key={`heading-${mode}`} className="flex flex-col gap-1 text-center animate-in fade-in zoom-in-95 duration-500">
+        <h2 className="text-3xl font-black tracking-tight slug-gradient-text">
           {mode === "signin" ? "Welcome Back" : "Create Account"}
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -127,7 +127,7 @@ export function SlugAuthForms({ slug }: SlugAuthFormsProps) {
 
       {/* ── SIGN IN FORM ── */}
       {mode === "signin" && (
-        <form onSubmit={handleSignIn} className="flex flex-col gap-3">
+        <form key="form-signin" onSubmit={handleSignIn} className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
           <input
             type="email"
             value={siEmail}
@@ -191,7 +191,7 @@ export function SlugAuthForms({ slug }: SlugAuthFormsProps) {
 
       {/* ── REGISTER FORM ── */}
       {mode === "register" && (
-        <form onSubmit={handleRegister} className="flex flex-col gap-3">
+        <form key="form-register" onSubmit={handleRegister} className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
           {regSuccess ? (
             <div className="rounded-xl border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30 px-4 py-5 text-center flex flex-col gap-2">
               <p className="text-sm font-semibold text-green-700 dark:text-green-400">Account created!</p>

@@ -121,6 +121,9 @@
     @apply border-border outline-ring/50;
   }
   html {
+    background: oklch(1 0 0);
+  }
+  html.dark {
     background: oklch(0.145 0 0);
   }
   body {
@@ -131,11 +134,16 @@
 
 /* ── Slug theming ─────────────────────────────────────────────────────────────
    CSS custom properties are set as inline styles on [data-slug-theme] by
-   SlugThemeWrapper. These fallbacks match the default "blue" color.
+   SlugThemeWrapper. Root defines the default "blue" color so these variables
+   are always available (e.g. on client dashboard pages without a slug theme).
    ──────────────────────────────────────────────────────────────────────────── */
-[data-slug-theme] {
+:root {
   --slug-primary:      #3B82F6;
   --slug-primary-dark: #1D4ED8;
+  --slug-gradient:     linear-gradient(135deg, var(--slug-primary), var(--slug-primary-dark));
+}
+
+[data-slug-theme] {
   --slug-gradient:     linear-gradient(135deg, var(--slug-primary), var(--slug-primary-dark));
   min-height: 100dvh;
 }

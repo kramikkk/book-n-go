@@ -42,11 +42,12 @@ export default function Login() {
       }
 
       const role = data.user?.role;
-      if (role === "client") {
-        router.push("/client/dashboard");
-      } else {
-        router.push("/customer/dashboard");
+      if (role !== "client") {
+        await fetch("/api/auth/logout", { method: "POST" });
+        setError("Access denied. This portal is for clients only.");
+        return;
       }
+      router.push("/client/dashboard");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

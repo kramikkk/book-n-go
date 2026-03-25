@@ -9,7 +9,6 @@ import { TIME_SLOTS } from "@/lib/booking-constants"
 import { IconCalendar, IconCalendarEvent, IconClock, IconClipboardList } from "@tabler/icons-react"
 import { BookingType } from "@/lib/schemas"
 import { isDateBooked, isDateInPast, isTimeDisabled, isTimeInRange, getSlotIndex, hasTimeConflict } from "@/lib/booking-utils"
-import { startOfDay } from "date-fns"
 
 interface BookingCalendarProps {
   date: Date | undefined
@@ -71,10 +70,8 @@ export function BookingCalendar({
       <Card className="flex flex-col gap-2 md:flex-[5]">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2">
-            <IconCalendar className="size-4 text-blue-500" />
-            <span className="bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-base font-bold text-transparent">
-              Pick a date
-            </span>
+            <IconCalendar className="size-4 text-[var(--slug-primary)]" />
+            <span className="slug-gradient-text text-base font-bold">Pick a date</span>
           </CardTitle>
           <CardDescription>Select your preferred appointment date.</CardDescription>
         </CardHeader>
@@ -85,15 +82,22 @@ export function BookingCalendar({
             onSelect={handleDateSelect}
             captionLayout="dropdown"
             disabled={(d) => isDateInPast(d)}
-            className="w-full flex-1 [--cell-size:--spacing(10)] [&_button[data-selected-single=true]]:bg-[#3A79C3] [&_button[data-selected-single=true]]:text-white [&_button[data-selected-single=true]]:hover:bg-[#3164a8]"
+            className="w-full flex-1 [--cell-size:--spacing(10)] [&_button[data-selected-single=true]]:bg-[var(--slug-primary)] [&_button[data-selected-single=true]]:text-white [&_button[data-selected-single=true]]:hover:bg-[var(--slug-primary-dark)]"
             classNames={{ root: "w-full" }}
             modifiers={{
-              booked: fullyBookedDates,
+              booked:    fullyBookedDates,
               available: (d) => !isDateInPast(d) && !isDateBooked(d, fullyBookedDates),
             }}
             modifiersClassNames={{
-              available: "[&_button]:bg-green-50 [&_button]:text-green-800 [&_button:hover]:bg-green-100",
-              booked: "[&_button]:!bg-red-100 [&_button]:!text-red-600 [&_button:hover]:!bg-red-200 [&_button]:cursor-not-allowed [&_button]:pointer-events-none",
+              available: [
+                "[&_button]:bg-green-50 [&_button]:text-green-800 [&_button:hover]:bg-green-100",
+                "dark:[&_button]:bg-green-950/50 dark:[&_button]:text-green-300 dark:[&_button:hover]:bg-green-900/60",
+              ].join(" "),
+              booked: [
+                "[&_button]:!bg-red-100 [&_button]:!text-red-600 [&_button:hover]:!bg-red-200",
+                "dark:[&_button]:!bg-red-950/50 dark:[&_button]:!text-red-400 dark:[&_button:hover]:!bg-red-900/60",
+                "[&_button]:cursor-not-allowed [&_button]:pointer-events-none",
+              ].join(" "),
               disabled: "[&_button]:!bg-transparent !text-muted-foreground !opacity-40",
             }}
             formatters={{
@@ -103,11 +107,11 @@ export function BookingCalendar({
           />
           <div className="flex items-center justify-center gap-4 pt-1 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <span className="inline-block shrink-0 size-3 rounded-sm bg-green-100 ring-1 ring-green-400" />
+              <span className="inline-block shrink-0 size-3 rounded-sm bg-green-100 ring-1 ring-green-400 dark:bg-green-950/50 dark:ring-green-700" />
               Available
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="inline-block shrink-0 size-3 rounded-sm bg-red-100 ring-1 ring-red-400" />
+              <span className="inline-block shrink-0 size-3 rounded-sm bg-red-100 ring-1 ring-red-400 dark:bg-red-950/50 dark:ring-red-700" />
               Fully Booked
             </span>
             <span className="flex items-center gap-1.5">
@@ -124,10 +128,8 @@ export function BookingCalendar({
         <Card className="flex flex-1 flex-col gap-2">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
-              <IconClock className="size-4 text-blue-500" />
-              <span className="bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-base font-bold text-transparent">
-                Pick a time
-              </span>
+              <IconClock className="size-4 text-[var(--slug-primary)]" />
+              <span className="slug-gradient-text text-base font-bold">Pick a time</span>
               {date && (
                 <span className="ml-auto text-xs font-normal text-muted-foreground">
                   {date.toLocaleDateString("default", { weekday: "short", month: "short", day: "numeric" })}
@@ -138,7 +140,7 @@ export function BookingCalendar({
           </CardHeader>
           <CardContent className="flex flex-1 flex-col gap-2">
             {(startTime || endTime) && (
-              <p className="text-xs text-[#3A79C3]">
+              <p className="text-xs text-[var(--slug-primary)]">
                 {startTime && !endTime && <>Start: <strong>{startTime}</strong> — pick an end time</>}
                 {startTime && endTime && <>Selected: <strong>{startTime}</strong> → <strong>{endTime}</strong></>}
               </p>
@@ -146,10 +148,10 @@ export function BookingCalendar({
             <div className="flex-1">
               <div className="grid grid-cols-2 gap-2 h-full">
                 {TIME_SLOTS.map((slot) => {
-                  const isStart = startTime === slot
-                  const isEnd = endTime === slot
-                  const inRange = isTimeInRange(slot, startTime, endTime)
-                  const disabled = isTimeDisabled(slot, startTime, endTime, bookedSlots)
+                  const isStart   = startTime === slot
+                  const isEnd     = endTime === slot
+                  const inRange   = isTimeInRange(slot, startTime, endTime)
+                  const disabled  = isTimeDisabled(slot, startTime, endTime, bookedSlots)
                   return (
                     <button
                       key={slot}
@@ -161,10 +163,10 @@ export function BookingCalendar({
                         disabled
                           ? "cursor-not-allowed border-border bg-muted text-muted-foreground line-through opacity-50"
                           : isStart || isEnd
-                            ? "border-[#3A79C3] bg-[#3A79C3] text-white ring-1 ring-[#3A79C3]"
+                            ? "border-[var(--slug-primary)] bg-[var(--slug-primary)] text-white ring-1 ring-[var(--slug-primary)]"
                             : inRange
-                              ? "border-[#3A79C3]/40 bg-[#3A79C3]/10 text-[#3A79C3]"
-                              : "border-border hover:border-[#3A79C3] hover:bg-[#3A79C3]/5"
+                              ? "border-[var(--slug-primary)]/40 bg-[var(--slug-primary)]/10 text-[var(--slug-primary)]"
+                              : "border-border bg-background text-foreground hover:border-[var(--slug-primary)] hover:bg-[var(--slug-primary)]/5"
                       )}
                     >
                       {slot}
@@ -184,7 +186,7 @@ export function BookingCalendar({
                 Available
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="inline-block shrink-0 size-3 rounded-sm bg-[#3A79C3] ring-1 ring-[#3A79C3]" />
+                <span className="inline-block shrink-0 size-3 rounded-sm bg-[var(--slug-primary)] ring-1 ring-[var(--slug-primary)]" />
                 Selected
               </span>
               <span className="flex items-center gap-1.5">
@@ -199,10 +201,8 @@ export function BookingCalendar({
         <Card className="gap-2">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2">
-              <IconCalendarEvent className="size-4 text-blue-500" />
-              <span className="bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-base font-bold text-transparent">
-                Booking Type
-              </span>
+              <IconCalendarEvent className="size-4 text-[var(--slug-primary)]" />
+              <span className="slug-gradient-text text-base font-bold">Booking Type</span>
             </CardTitle>
             <CardDescription>Select whether this is an appointment or a reservation.</CardDescription>
           </CardHeader>
@@ -217,8 +217,8 @@ export function BookingCalendar({
                     className={cn(
                       "flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-all",
                       bookingType === type
-                        ? "border-[#3A79C3] bg-[#3A79C3] text-white ring-1 ring-[#3A79C3]"
-                        : "border-border hover:border-[#3A79C3] hover:bg-[#3A79C3]/5"
+                        ? "border-[var(--slug-primary)] bg-[var(--slug-primary)] text-white ring-1 ring-[var(--slug-primary)]"
+                        : "border-border bg-background text-foreground hover:border-[var(--slug-primary)] hover:bg-[var(--slug-primary)]/5"
                     )}
                   >
                     <Icon className="size-4" />

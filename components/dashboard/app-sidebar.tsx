@@ -60,16 +60,16 @@ export function AppSidebar({ user, ...props }: React.ComponentProps<typeof Sideb
               asChild
               className="data-[slot=sidebar-menu-button]:!p-3 data-[slot=sidebar-menu-button]:!h-auto"
             >
-              <a href="#" className="flex w-full items-center gap-3">
-                <Avatar className="h-20 w-20 overflow-hidden rounded-xl">
+              <a href="#" className="group/logo flex w-full items-center gap-3">
+                <Avatar className="h-10 w-10 overflow-hidden rounded-lg border border-[#3A79C3]/30 bg-[#3A79C3]/10 transition-transform duration-200 ease-out group-hover/logo:scale-105">
                   <AvatarImage src="/BNGLogo.png" alt="BookNGo" className="scale-125 object-cover" />
-                  <AvatarFallback className="rounded-xl text-base">BG</AvatarFallback>
+                  <AvatarFallback className="rounded-lg text-sm font-bold text-[#3A79C3]">BG</AvatarFallback>
                 </Avatar>
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-3xl font-bold text-transparent">
+                <div className="flex min-w-0 flex-1 flex-col transition-transform duration-200 ease-out group-hover/logo:translate-x-0.5">
+                  <span className="bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-xl font-bold text-transparent">
                     BookNGo
                   </span>
-                  <span className="text-base font-semibold text-[#3EB09B]">Client Panel</span>
+                  <span className="text-xs font-medium text-muted-foreground">Client Panel</span>
                 </div>
               </a>
             </SidebarMenuButton>
@@ -77,7 +77,7 @@ export function AppSidebar({ user, ...props }: React.ComponentProps<typeof Sideb
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain items={navMain} color="#3A79C3" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

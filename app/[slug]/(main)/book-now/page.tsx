@@ -204,8 +204,8 @@ export default function BookNowPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <IconUser className="size-4 text-blue-500" />
-                    <span className="bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-base font-bold text-transparent">
+                    <IconUser className="size-4 text-[var(--slug-primary)]" />
+                    <span className="slug-gradient-text text-base font-bold">
                       Personal Details
                     </span>
                   </CardTitle>
@@ -215,7 +215,7 @@ export default function BookNowPage() {
                     </p>
                     <Link
                       href={`/${slug}/profile`}
-                      className="text-xs text-[#3A79C3] underline-offset-4 hover:underline"
+                      className="text-xs text-[var(--slug-primary)] underline-offset-4 hover:underline"
                     >
                       Edit profile
                     </Link>
@@ -224,17 +224,17 @@ export default function BookNowPage() {
                 <CardContent className="flex flex-col gap-3 px-6 pb-4 pt-0">
                   <div className="flex flex-col divide-y rounded-lg border">
                     <div className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                      <IconUser className="size-4 shrink-0 text-[#3A79C3]" />
+                      <IconUser className="size-4 shrink-0 text-[var(--slug-primary)]" />
                       <span className="text-muted-foreground">Name</span>
                       <span className="ml-auto font-medium">{fullName}</span>
                     </div>
                     <div className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                      <IconMail className="size-4 shrink-0 text-[#3A79C3]" />
+                      <IconMail className="size-4 shrink-0 text-[var(--slug-primary)]" />
                       <span className="text-muted-foreground">Email</span>
                       <span className="ml-auto font-medium">{profile.email}</span>
                     </div>
                     <div className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                      <IconPhone className="size-4 shrink-0 text-[#3A79C3]" />
+                      <IconPhone className="size-4 shrink-0 text-[var(--slug-primary)]" />
                       <span className="text-muted-foreground">Phone</span>
                       <span className="ml-auto font-medium">{profile.phone ?? "—"}</span>
                     </div>
@@ -270,8 +270,8 @@ export default function BookNowPage() {
           <Card className="gap-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <IconCalendar className="size-4 text-blue-500" />
-                <span className="bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-base font-bold text-transparent">
+                <IconCalendar className="size-4 text-[var(--slug-primary)]" />
+                <span className="slug-gradient-text text-base font-bold">
                   Review Your Booking
                 </span>
               </CardTitle>
@@ -285,39 +285,39 @@ export default function BookNowPage() {
                 </p>
                 <div className="flex flex-col divide-y rounded-lg border">
                   <div className="flex items-center gap-3 px-4 py-3 text-sm">
-                    <IconCalendar className="size-4 shrink-0 text-[#3A79C3]" />
+                    <IconCalendar className="size-4 shrink-0 text-[var(--slug-primary)]" />
                     <span className="text-muted-foreground">Date</span>
                     <span className="ml-auto font-semibold">
                       {bookingData.date?.toLocaleDateString("default", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) ?? "—"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 px-4 py-3 text-sm">
-                    <IconClock className="size-4 shrink-0 text-[#3A79C3]" />
+                    <IconClock className="size-4 shrink-0 text-[var(--slug-primary)]" />
                     <span className="text-muted-foreground">Time</span>
                     <span className="ml-auto font-semibold">{bookingData.startTime} – {bookingData.endTime}</span>
                   </div>
                   {duration && (
                     <div className="flex items-center gap-3 px-4 py-3 text-sm">
-                      <IconHourglass className="size-4 shrink-0 text-[#3A79C3]" />
+                      <IconHourglass className="size-4 shrink-0 text-[var(--slug-primary)]" />
                       <span className="text-muted-foreground">Duration</span>
                       <span className="ml-auto font-semibold">{duration}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-3 px-4 py-3 text-sm">
-                    <IconMapPin className="size-4 shrink-0 text-[#3A79C3]" />
+                    <IconMapPin className="size-4 shrink-0 text-[var(--slug-primary)]" />
                     <span className="text-muted-foreground">Location</span>
                     <span className="ml-auto font-semibold">Main Branch</span>
                   </div>
                   <div className="flex items-center gap-3 px-4 py-3 text-sm">
                     {bookingData.bookingType === "Appointment"
-                      ? <IconCalendarEvent className="size-4 shrink-0 text-[#3A79C3]" />
-                      : <IconClipboardList className="size-4 shrink-0 text-[#3A79C3]" />}
+                      ? <IconCalendarEvent className="size-4 shrink-0 text-[var(--slug-primary)]" />
+                      : <IconClipboardList className="size-4 shrink-0 text-[var(--slug-primary)]" />}
                     <span className="text-muted-foreground">Type</span>
                     <span className="ml-auto font-semibold">{bookingData.bookingType}</span>
                   </div>
                   {selectedServiceLabel && (
                     <div className="flex items-center gap-3 px-4 py-3 text-sm">
-                      <IconTag className="size-4 shrink-0 text-[#3A79C3]" />
+                      <IconTag className="size-4 shrink-0 text-[var(--slug-primary)]" />
                       <span className="text-muted-foreground">Service</span>
                       <span className="ml-auto font-semibold">{selectedServiceLabel}</span>
                     </div>
@@ -367,7 +367,8 @@ export default function BookNowPage() {
                 </Button>
               )}
               <Button
-                className="gap-2 bg-[#3A79C3] hover:bg-[#3164a8]"
+                className="gap-2"
+              style={{ background: "var(--slug-gradient)" }}
                 disabled={!canContinueStep1}
                 onClick={() => setStep(2)}
               >
@@ -378,7 +379,8 @@ export default function BookNowPage() {
           )}
           {step === 2 && (
             <Button
-              className="gap-2 bg-[#3A79C3] hover:bg-[#3164a8]"
+              className="gap-2"
+              style={{ background: "var(--slug-gradient)" }}
               disabled={!canContinueStep2}
               onClick={() => setStep(3)}
             >
@@ -388,7 +390,8 @@ export default function BookNowPage() {
           )}
           {step === 3 && (
             <Button
-              className="gap-2 bg-[#3A79C3] hover:bg-[#3164a8]"
+              className="gap-2"
+              style={{ background: "var(--slug-gradient)" }}
               onClick={handleConfirmBooking}
               disabled={isSubmitting}
             >

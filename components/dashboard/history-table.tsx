@@ -187,8 +187,8 @@ export function HistoryTable() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <IconHistory className="size-4 text-blue-500" />
-          <h1 className="bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-base font-bold text-transparent">
+          <IconHistory className="size-4 text-[var(--slug-primary)]" />
+          <h1 className="slug-gradient-text text-base font-bold">
             Booking History
           </h1>
         </CardTitle>

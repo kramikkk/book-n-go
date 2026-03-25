@@ -30,9 +30,9 @@ export function BookingSteps({ current = 1 }: BookingStepsProps) {
                 className={cn(
                   "relative flex size-10 items-center justify-center rounded-full border-2 transition-all duration-300",
                   isCompleted
-                    ? "border-[#3A79C3] bg-[#3A79C3] text-white shadow-sm"
+                    ? "border-[var(--slug-primary)] bg-[var(--slug-primary)] text-white shadow-sm"
                     : isActive
-                    ? "border-[#3A79C3] bg-[#3A79C3]/10 text-[#3A79C3] shadow-[0_0_0_4px_rgba(58,121,195,0.1)]"
+                    ? "border-[var(--slug-primary)] bg-[var(--slug-primary)]/10 text-[var(--slug-primary)] shadow-[0_0_0_4px_color-mix(in_srgb,var(--slug-primary)_20%,transparent)]"
                     : "border-border bg-background text-muted-foreground"
                 )}
               >
@@ -47,13 +47,13 @@ export function BookingSteps({ current = 1 }: BookingStepsProps) {
                   className={cn(
                     "text-xs font-semibold leading-tight",
                     isActive || isCompleted
-                      ? "text-white"
-                      : "text-white/60"
+                      ? "text-foreground"
+                      : "text-muted-foreground"
                   )}
                 >
                   {step.label}
                 </span>
-                <span className="hidden text-[11px] text-white/60 sm:block">
+                <span className="hidden text-[11px] text-muted-foreground sm:block">
                   {step.description}
                 </span>
               </div>
@@ -63,7 +63,7 @@ export function BookingSteps({ current = 1 }: BookingStepsProps) {
             {!isLast && (
               <div className="mt-5 h-px flex-1 overflow-hidden rounded-full bg-border">
                 <div
-                  className="h-full rounded-full bg-[#3A79C3] transition-all duration-500"
+                  className="h-full rounded-full bg-[var(--slug-primary)] transition-all duration-500"
                   style={{ width: isCompleted ? "100%" : "0%" }}
                 />
               </div>

@@ -70,16 +70,14 @@ export function UserSidebar({
               asChild
               className="data-[slot=sidebar-menu-button]:!p-3 data-[slot=sidebar-menu-button]:!h-auto"
             >
-              <a href="#" className="flex w-full items-center gap-3">
-                <Avatar className="h-20 w-20 overflow-hidden rounded-xl">
+              <a href="#" className="group/logo flex w-full items-center gap-3">
+                <Avatar className="h-10 w-10 overflow-hidden rounded-lg border border-[color-mix(in_srgb,var(--slug-primary)_30%,transparent)] bg-[color-mix(in_srgb,var(--slug-primary)_10%,transparent)] transition-transform duration-200 ease-out group-hover/logo:scale-105">
                   <AvatarImage src="/BNGLogo.png" alt="BookNGo" className="scale-125 object-cover" />
-                  <AvatarFallback className="rounded-xl text-base">BG</AvatarFallback>
+                  <AvatarFallback className="rounded-lg text-sm font-bold text-[var(--slug-primary)]">BG</AvatarFallback>
                 </Avatar>
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-3xl font-bold text-transparent">
-                    BookNGo
-                  </span>
-                  <span className="text-base font-semibold text-[#3EB09B]">User Panel</span>
+                <div className="flex min-w-0 flex-1 flex-col transition-transform duration-200 ease-out group-hover/logo:translate-x-0.5">
+                  <span className="slug-gradient-text text-xl font-bold">BookNGo</span>
+                  <span className="text-xs font-medium text-muted-foreground">User Panel</span>
                 </div>
               </a>
             </SidebarMenuButton>

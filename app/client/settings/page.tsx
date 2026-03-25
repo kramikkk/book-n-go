@@ -13,7 +13,7 @@ export default async function SettingsPage() {
 
   const { data: settings } = await supabase
     .from("settings")
-    .select("slug, welcome_message, seo_title, seo_description, business_name, logo_url, primary_color")
+    .select("slug, welcome_message, seo_title, seo_description, business_name, logo_url, primary_color, theme")
     .eq("client_id", user.id)
     .maybeSingle()
 
@@ -27,7 +27,7 @@ export default async function SettingsPage() {
             </div>
             <div className="flex min-w-[360px] flex-1 flex-col gap-4 [&>*]:flex-1">
               <BusinessProfile businessName={settings?.business_name ?? ""} logoUrl={settings?.logo_url ?? null} />
-              <ChangeTheme primaryColor={settings?.primary_color ?? "blue"} />
+              <ChangeTheme primaryColor={settings?.primary_color ?? "blue"} theme={settings?.theme ?? "system"} />
             </div>
             <div className="flex min-w-[360px] flex-1 flex-col [&>*]:flex-1">
               <ServicesManager />

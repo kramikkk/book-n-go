@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse }  from 'next/server'
 
-const VALID_COLORS = ['blue', 'indigo', 'purple', 'rose', 'orange', 'green', 'teal']
+const VALID_COLORS  = ['blue', 'indigo', 'purple', 'rose', 'orange', 'green', 'teal']
+const VALID_THEMES  = ['light', 'dark', 'system']
 
 // ─── GET /api/client/settings ──────────────────────────────────────────────────
 // Returns the client's current settings row.
@@ -67,6 +68,7 @@ export async function PATCH(request: Request) {
       seo_title,
       seo_description,
       primary_color,
+      theme,
       new_booking_alerts,
       cancellation_alerts,
     } = body
@@ -100,6 +102,14 @@ export async function PATCH(request: Request) {
       )
     }
 
+    // ── theme ──
+    if (theme !== undefined && !VALID_THEMES.includes(theme)) {
+      return NextResponse.json(
+        { error: `Invalid theme. Must be one of: ${VALID_THEMES.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
     if (new_booking_alerts !== undefined && typeof new_booking_alerts !== 'boolean') {
       return NextResponse.json({ error: 'new_booking_alerts must be a boolean' }, { status: 400 })
     }
@@ -115,6 +125,7 @@ export async function PATCH(request: Request) {
     if (seo_title           !== undefined) updates.seo_title           = seo_title
     if (seo_description     !== undefined) updates.seo_description     = seo_description
     if (primary_color       !== undefined) updates.primary_color       = primary_color
+    if (theme               !== undefined) updates.theme               = theme
     if (new_booking_alerts  !== undefined) updates.new_booking_alerts  = new_booking_alerts
     if (cancellation_alerts !== undefined) updates.cancellation_alerts = cancellation_alerts
 

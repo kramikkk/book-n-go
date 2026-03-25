@@ -23,13 +23,16 @@ function getPageTitle(pathname: string): string {
 export function SiteHeader({
   user,
   logoutRedirect = "/",
+  variant = "default",
 }: {
   user: { name: string; email: string; avatar: string }
   logoutRedirect?: string
+  variant?: "default" | "transparent"
 }) {
   const pathname = usePathname()
   const router = useRouter()
   const pageTitle = getPageTitle(pathname)
+  const isTransparent = variant === "transparent"
 
   const initials = user.name
     .split(" ")
@@ -44,19 +47,19 @@ export function SiteHeader({
   }
 
   return (
-    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
+    <header className={`flex h-(--header-height) shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) ${isTransparent ? "border-transparent bg-transparent" : "border-b"}`}>
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
-        <h1 className="bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-base font-bold text-transparent">
+        <SidebarTrigger className={`-ml-1 ${isTransparent ? "text-white hover:bg-white/20 hover:text-white" : ""}`} />
+        <Separator orientation="vertical" className={`mx-2 data-[orientation=vertical]:h-4 ${isTransparent ? "bg-white/30" : ""}`} />
+        <h1 className={`text-base font-bold ${isTransparent ? "text-white" : "bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] bg-clip-text text-transparent"}`}>
           {pageTitle}
         </h1>
         <div className="ml-auto flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Avatar className="h-8 w-8 cursor-pointer rounded-lg">
+              <Avatar className={`h-8 w-8 cursor-pointer rounded-lg ring-offset-0 ${isTransparent ? "ring-2 ring-white/40" : ""}`}>
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                <AvatarFallback className={`rounded-lg ${isTransparent ? "bg-white/20 text-white" : ""}`}>{initials}</AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="min-w-56 rounded-lg" align="end" sideOffset={4}>

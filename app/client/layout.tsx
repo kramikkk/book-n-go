@@ -29,6 +29,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
   return (
     <SidebarProvider
       defaultOpen={defaultOpen}
+      className="bg-background text-foreground"
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 72)",

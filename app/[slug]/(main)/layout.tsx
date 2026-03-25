@@ -1,5 +1,4 @@
 import React from "react"
-import Image from "next/image"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
@@ -45,20 +44,53 @@ export default async function MainLayout({
       }
     >
       <UserSidebar slug={slug} user={{ name, email, avatar }} logoutRedirect={`/${slug}`} variant="inset" />
-      <SidebarInset>
-        <SiteHeader user={{ name, email, avatar }} logoutRedirect={`/${slug}`} />
-        <div className="relative flex-1">
-          <Image
-            src="/WaveBG.png"
-            alt=""
-            width={1440}
-            height={320}
-            className="absolute top-0 left-0 w-full h-auto"
-            priority
-          />
-          <div className="relative flex min-h-[calc(100vh-var(--header-height))] flex-col">
+      <SidebarInset className="overflow-hidden">
+        {/* Wrapper is relative so the absolute wave is scoped to this area */}
+        <div className="relative flex flex-1 flex-col">
+
+          {/* Wave spans behind header + top of content */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 z-0 overflow-hidden"
+            aria-hidden="true"
+            style={{ height: "280px" }}
+          >
+            <svg
+              viewBox="0 0 1440 280"
+              preserveAspectRatio="none"
+              className="w-full h-full"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <linearGradient id="slug-wave-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%"   stopColor="var(--slug-primary)"      stopOpacity="1" />
+                  <stop offset="100%" stopColor="var(--slug-primary-dark)" stopOpacity="1" />
+                </linearGradient>
+              </defs>
+              {/* Back layer — subtle depth */}
+              <path
+                d="M0,200 C240,260 480,120 720,200 C960,280 1200,140 1440,200 L1440,0 L0,0 Z"
+                fill="url(#slug-wave-grad)"
+                opacity="0.35"
+              />
+              {/* Front layer */}
+              <path
+                d="M0,160 C180,220 360,100 540,160 C720,220 900,100 1080,160 C1260,220 1380,130 1440,160 L1440,0 L0,0 Z"
+                fill="url(#slug-wave-grad)"
+                opacity="0.9"
+              />
+            </svg>
+          </div>
+
+          {/* Transparent header floats over the wave */}
+          <div className="relative z-10">
+            <SiteHeader variant="transparent" user={{ name, email, avatar }} logoutRedirect={`/${slug}`} />
+          </div>
+
+          {/* Page content — sits below the wave */}
+          <div className="relative z-10 flex flex-1 flex-col min-h-[calc(100vh-var(--header-height))]">
             {children}
           </div>
+
         </div>
       </SidebarInset>
     </SidebarProvider>

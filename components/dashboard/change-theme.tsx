@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Moon, Sun, Monitor } from "lucide-react"
+import { getSlugColors } from "@/lib/slug-theme"
 
 const colorSchemes = [
   { value: "blue",   label: "Blue",   hex: "#3B82F6" },
@@ -41,11 +42,13 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-interface ChangeThemeProps {
+export const ChangeTheme = ({
+  primaryColor = "blue",
+  theme = "system",
+}: {
   primaryColor?: string
-}
-
-export const ChangeTheme = ({ primaryColor = "blue" }: ChangeThemeProps) => {
+  theme?: string
+}) => {
   const [submitState, setSubmitState] = useState<"idle" | "loading" | "success" | "error">("idle")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -53,32 +56,35 @@ export const ChangeTheme = ({ primaryColor = "blue" }: ChangeThemeProps) => {
     ? (primaryColor as FormValues["colorScheme"])
     : "blue"
 
+  const validTheme = themeOptions.some((t) => t.value === theme)
+    ? (theme as FormValues["theme"])
+    : "system"
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      theme: "system",
-      colorScheme: validColor,
-    },
+    defaultValues: { theme: validTheme, colorScheme: validColor },
   })
+
+  const watchedColor = form.watch("colorScheme")
+  const watchedTheme = form.watch("theme")
+  const previewColors = getSlugColors(watchedColor)
+  const previewGradient = `linear-gradient(135deg, ${previewColors.primary}, ${previewColors.dark})`
 
   const isSubmitting = submitState === "loading"
 
   const onSubmit = async (values: FormValues) => {
     setSubmitState("loading")
     setErrorMessage(null)
-
     try {
       const res = await fetch("/api/client/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ primary_color: values.colorScheme }),
+        body: JSON.stringify({ primary_color: values.colorScheme, theme: values.theme }),
       })
-
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body?.error ?? "Failed to save theme")
       }
-
       setSubmitState("success")
       form.reset(values)
     } catch (err) {
@@ -97,12 +103,54 @@ export const ChangeTheme = ({ primaryColor = "blue" }: ChangeThemeProps) => {
           </h1>
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Personalize the look and feel of your booking page for customers.
+          Customize the look of your customer-facing booking page.
         </p>
       </CardHeader>
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-1 flex-col">
-          <CardContent className="flex flex-1 flex-col gap-6">
+          <CardContent className="flex flex-1 flex-col gap-5">
+
+            {/* Live preview strip */}
+            <div className="overflow-hidden rounded-xl border">
+              {/* Gradient header preview */}
+              <div
+                className="h-12 w-full transition-all duration-300"
+                style={{ background: previewGradient }}
+              />
+              {/* Mock page preview */}
+              <div
+                className={cn(
+                  "flex items-center justify-between px-4 py-3 text-xs transition-colors duration-300",
+                  watchedTheme === "dark"
+                    ? "bg-zinc-900 text-zinc-200"
+                    : "bg-white text-zinc-700"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className="size-5 rounded-full"
+                    style={{ background: previewGradient }}
+                  />
+                  <span className="font-medium">Your Business</span>
+                </div>
+                <div
+                  className="rounded-md px-2.5 py-1 text-[10px] font-semibold text-white"
+                  style={{ background: previewGradient }}
+                >
+                  Book Now
+                </div>
+              </div>
+              <div
+                className={cn(
+                  "px-4 pb-3 pt-1 transition-colors duration-300",
+                  watchedTheme === "dark" ? "bg-zinc-900" : "bg-white"
+                )}
+              >
+                <div className={cn("h-2 w-3/4 rounded-full", watchedTheme === "dark" ? "bg-zinc-700" : "bg-zinc-100")} />
+                <div className={cn("mt-1.5 h-2 w-1/2 rounded-full", watchedTheme === "dark" ? "bg-zinc-800" : "bg-zinc-50")} />
+              </div>
+            </div>
 
             {/* Theme Mode */}
             <FormField
@@ -136,32 +184,51 @@ export const ChangeTheme = ({ primaryColor = "blue" }: ChangeThemeProps) => {
               )}
             />
 
-            {/* Color Scheme */}
+            {/* Primary Color */}
             <FormField
               control={form.control}
               name="colorScheme"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Primary Color</FormLabel>
+                  <FormLabel>Brand Color</FormLabel>
                   <FormControl>
-                    <div className="flex flex-wrap gap-2">
-                      {colorSchemes.map(({ value, label, hex }) => (
-                        <button
-                          key={value}
-                          type="button"
-                          title={label}
-                          onClick={() => field.onChange(value)}
-                          className={cn(
-                            "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-                            field.value === value
-                              ? "border-primary ring-2 ring-primary ring-offset-2"
-                              : "border-border hover:border-muted-foreground"
-                          )}
-                        >
-                          <span className="size-3 rounded-full" style={{ backgroundColor: hex }} />
-                          {label}
-                        </button>
-                      ))}
+                    <div className="grid grid-cols-7 gap-2">
+                      {colorSchemes.map(({ value, label, hex }) => {
+                        const colors = getSlugColors(value)
+                        const gradient = `linear-gradient(135deg, ${colors.primary}, ${colors.dark})`
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            title={label}
+                            onClick={() => field.onChange(value)}
+                            className={cn(
+                              "group flex flex-col items-center gap-1.5",
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "block size-8 rounded-full transition-all duration-200 ring-offset-2",
+                                field.value === value
+                                  ? "ring-2 scale-110"
+                                  : "hover:scale-105 opacity-70 hover:opacity-100"
+                              )}
+                              style={{
+                                background: gradient,
+                                ringColor: hex,
+                                // @ts-ignore
+                                "--tw-ring-color": hex,
+                              }}
+                            />
+                            <span className={cn(
+                              "text-[9px] font-medium transition-colors",
+                              field.value === value ? "text-foreground" : "text-muted-foreground"
+                            )}>
+                              {label}
+                            </span>
+                          </button>
+                        )
+                      })}
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -169,9 +236,9 @@ export const ChangeTheme = ({ primaryColor = "blue" }: ChangeThemeProps) => {
               )}
             />
 
-            {/* Inline feedback */}
+            {/* Feedback */}
             {submitState === "success" && (
-              <p className="text-sm text-green-600 font-medium">Theme saved successfully.</p>
+              <p className="text-sm text-green-600 font-medium">Theme saved — your booking page is updated.</p>
             )}
             {submitState === "error" && (
               <p className="text-sm text-red-500 font-medium">{errorMessage}</p>
@@ -182,7 +249,7 @@ export const ChangeTheme = ({ primaryColor = "blue" }: ChangeThemeProps) => {
             <Button
               type="button"
               variant="ghost"
-              onClick={() => form.reset()}
+              onClick={() => { form.reset(); setSubmitState("idle") }}
               disabled={!form.formState.isDirty || isSubmitting}
               className={!form.formState.isDirty ? "pointer-events-none opacity-0" : ""}
             >

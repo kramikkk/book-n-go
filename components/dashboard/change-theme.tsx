@@ -215,7 +215,6 @@ export const ChangeTheme = ({
                               )}
                               style={{
                                 background: gradient,
-                                ringColor: hex,
                                 // @ts-ignore
                                 "--tw-ring-color": hex,
                               }}

@@ -7,7 +7,7 @@ import { requireClient } from "@/lib/supabase/server"
 import { buildStats } from "@/app/api/client/dashboard/stats"
 import { buildBarChart } from "@/app/api/client/dashboard/bar-chart"
 import { buildPieChart } from "@/app/api/client/dashboard/pie-chart"
-import type { RawRow, BookingRow } from "@/app/api/client/dashboard/types"
+import type { RawRow, BookingRow, BarChartData, PieChartData } from "@/app/api/client/dashboard/types"
 import type { Booking } from "@/lib/schemas"
 
 export default async function DashboardPage() {
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
     return renderDashboard(null, null, null, [])
   }
 
-  const rows: BookingRow[] = ((data ?? []) as RawRow[]).map((b: RawRow) => ({
+  const rows: BookingRow[] = ((data ?? []) as unknown as RawRow[]).map((b: RawRow) => ({
     id: b.id, reference_number: b.reference_number, name: b.name, contact: b.contact, date: b.date,
     time_start: b.time_start, time_end: b.time_end,
     type: b.type as BookingRow["type"], status: b.status as BookingRow["status"],
@@ -75,9 +75,9 @@ export default async function DashboardPage() {
 
 function renderDashboard(
   stats: { total: number; pending: number; completed: number; canceled: number } | null,
-  barChart: unknown,
-  pieChart: unknown,
-  upcoming: BookingRow[]
+  barChart: BarChartData | null,
+  pieChart: PieChartData | null,
+  upcoming: Booking[]
 ) {
   return (
     <div className="flex flex-1 flex-col">

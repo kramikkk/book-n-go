@@ -36,6 +36,7 @@ export async function GET(request: Request) {
         .from('bookings')
         .select(`
           id,
+          reference_number,
           name,
           contact,
           date,
@@ -63,7 +64,8 @@ export async function GET(request: Request) {
 
     // Normalise the Supabase join shape (arrays → single objects)
     const rows: BookingRow[] = ((data ?? []) as RawRow[]).map((b: RawRow) => ({
-      id:         b.id,
+      id:               b.id,
+      reference_number: b.reference_number,
       name:       b.name,
       contact:    b.contact,
       date:       b.date,

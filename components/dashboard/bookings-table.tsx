@@ -48,7 +48,7 @@ type BookingRow = Record<string, any>
 
 interface BookingsTableProps {
   bookings: BookingRow[]
-  onStatusChange?: (id: string, status: 'Completed' | 'Canceled') => void
+  onDelete?: (id: string) => void
 }
 
 const statusClass: Record<string, string> = {
@@ -58,7 +58,7 @@ const statusClass: Record<string, string> = {
   Confirmed: "border-blue-500 text-blue-600",
 }
 
-export function BookingsTable({ bookings, onStatusChange }: BookingsTableProps) {
+export function BookingsTable({ bookings, onDelete }: BookingsTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -164,19 +164,11 @@ export function BookingsTable({ bookings, onStatusChange }: BookingsTableProps) 
               <span className="text-xs text-muted-foreground">{row.original.contact}</span>
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View Details</DropdownMenuItem>
-            <DropdownMenuItem>Edit</DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => onStatusChange?.(row.original.id, 'Completed')}
-            >
-              Mark as Completed
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
+              variant="destructive"
               onClick={() => setCancelTarget(row.original.id)}
-              className="text-destructive"
             >
-              Cancel Booking
+              Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -305,21 +297,21 @@ export function BookingsTable({ bookings, onStatusChange }: BookingsTableProps) 
       <AlertDialog open={!!cancelTarget} onOpenChange={(open) => !open && setCancelTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this booking?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will mark the booking as Canceled. This action cannot be undone.
+              This will permanently delete the booking. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep Booking</AlertDialogCancel>
+            <AlertDialogCancel>Keep</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
-                if (cancelTarget) onStatusChange?.(cancelTarget, 'Canceled')
+                if (cancelTarget) onDelete?.(cancelTarget)
                 setCancelTarget(null)
               }}
             >
-              Cancel Booking
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

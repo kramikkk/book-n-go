@@ -2,17 +2,18 @@
 // Supabase returns joined tables as arrays, not single objects
 
 export type RawRow = {
-  id:         string
-  name:       string
-  contact:    string
-  date:       string
-  time_start: string
-  time_end:   string
-  type:       string
-  status:     string
-  created_at: string
-  services:   { label: string }[]
-  profiles:   { id: string; first_name: string | null; last_name: string | null; email: string | null }[]
+  id:               string
+  reference_number: string | null
+  name:             string
+  contact:          string
+  date:             string
+  time_start:       string
+  time_end:         string
+  type:             string
+  status:           string
+  created_at:       string
+  services:         { label: string } | null
+  profiles:         { id: string; first_name: string | null; last_name: string | null; email: string | null }[]
 }
 
 // ─── Normalised booking row ───────────────────────────────────────────────────
@@ -21,16 +22,17 @@ export type BookingStatus = 'Pending' | 'Completed' | 'Canceled'
 export type BookingType   = 'Appointment' | 'Reservation'
 
 export type BookingRow = {
-  id:         string
-  name:       string
-  contact:    string
-  date:       string
-  time_start: string
-  time_end:   string
-  type:       BookingType
-  status:     BookingStatus
-  service:    string | null
-  created_at: string
+  id:               string
+  reference_number: string | null
+  name:             string
+  contact:          string
+  date:             string
+  time_start:       string
+  time_end:         string
+  type:             BookingType
+  status:           BookingStatus
+  service:          string | null
+  created_at:       string
   customer: {
     id:         string
     first_name: string | null

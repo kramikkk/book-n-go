@@ -6,23 +6,17 @@ import { toast } from "sonner"
 export function BookingsClient({ initialBookings }: { initialBookings: unknown[] }) {
   const [bookings, setBookings] = useState(initialBookings)
 
-  const handleStatusChange = async (id: string, status: 'Completed' | 'Canceled') => {
-    const res = await fetch(`/api/client/bookings/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    })
+  const handleDelete = async (id: string) => {
+    const res = await fetch(`/api/client/bookings/${id}`, { method: 'DELETE' })
     if (!res.ok) {
-      toast.error('Failed to update booking status')
+      toast.error('Failed to delete booking')
       return
     }
-    setBookings((prev) =>
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      prev.map((b: any) => b.id === id ? { ...b, status } : b)
-    )
-    toast.success(`Booking marked as ${status}`)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setBookings((prev) => prev.filter((b: any) => b.id !== id))
+    toast.success('Booking deleted')
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return <BookingsTable bookings={bookings as any[]} onStatusChange={handleStatusChange} />
+  return <BookingsTable bookings={bookings as any[]} onDelete={handleDelete} />
 }

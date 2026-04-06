@@ -138,13 +138,13 @@
    are always available (e.g. on client dashboard pages without a slug theme).
    ──────────────────────────────────────────────────────────────────────────── */
 :root {
-  --slug-primary:      #3B82F6;
-  --slug-primary-dark: #1D4ED8;
-  --slug-gradient:     linear-gradient(135deg, var(--slug-primary), var(--slug-primary-dark));
+  --slug-primary:      #3F51B5;
+  --slug-primary-dark: #329A9A;
+  --slug-gradient:     linear-gradient(to right, #3F51B5, #3A79C3, #329A9A);
 }
 
 [data-slug-theme] {
-  --slug-gradient:     linear-gradient(135deg, var(--slug-primary), var(--slug-primary-dark));
+  --slug-gradient:     linear-gradient(to right, var(--slug-primary), var(--slug-primary-dark));
   min-height: 100dvh;
 }
 

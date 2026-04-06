@@ -25,7 +25,7 @@ export default async function DashboardPage() {
   const [{ data, error: dbError }, { count: totalCount }] = await Promise.all([
     supabase
       .from("bookings")
-      .select(`id, name, contact, date, time_start, time_end, type, status, created_at,
+      .select(`id, reference_number, name, contact, date, time_start, time_end, type, status, created_at, services(label),
         profiles!bookings_customer_id_fkey ( id, first_name, last_name, email )`)
       .eq("client_id", user!.id)
       .gte("date", dateLimit)
@@ -43,15 +43,29 @@ export default async function DashboardPage() {
   }
 
   const rows: BookingRow[] = ((data ?? []) as RawRow[]).map((b: RawRow) => ({
-    id: b.id, name: b.name, contact: b.contact, date: b.date,
+    id: b.id, reference_number: b.reference_number, name: b.name, contact: b.contact, date: b.date,
     time_start: b.time_start, time_end: b.time_end,
     type: b.type as BookingRow["type"], status: b.status as BookingRow["status"],
-    service: null, created_at: b.created_at,
-    customer: b.profiles[0] ?? null,
+    service: b.services?.label ?? null, created_at: b.created_at,
+    customer: b.profiles?.[0] ?? null,
   }))
 
   const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date())
-  const upcoming = rows.filter((b) => b.status === "Pending" && b.date >= todayStr).slice(0, 10)
+  const upcomingRows = rows.filter((b) => b.status === "Pending" && b.date >= todayStr).slice(0, 10)
+
+  const upcoming: Booking[] = upcomingRows.map((b) => ({
+    id: b.id,
+    ref: b.reference_number ?? b.id,
+    name: [b.customer?.first_name, b.customer?.last_name].filter(Boolean).join(" ") || b.name,
+    email: b.customer?.email ?? "",
+    contact: b.contact,
+    date: new Date(b.date),
+    timeStart: b.time_start,
+    timeEnd: b.time_end,
+    type: b.type,
+    service: b.service ?? "",
+    status: b.status as Booking["status"],
+  }))
 
   const stats = buildStats(rows)
   stats.total = totalCount ?? stats.total
@@ -79,7 +93,7 @@ function renderDashboard(
             </div>
           </div>
           <div className="px-4 lg:px-6">
-            <UpcomingTable bookings={upcoming as unknown as Booking[]} />
+            <UpcomingTable bookings={upcoming} />
           </div>
         </div>
       </div>

@@ -66,3 +66,35 @@ export async function PATCH(
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
 }
+
+// ─── DELETE /api/client/bookings/[id] ─────────────────────────────────────────
+// Permanently deletes a booking that belongs to the authenticated client.
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (user.app_metadata?.role !== 'client') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+    const { id } = await params
+
+    const { error: dbError } = await supabase
+      .from('bookings')
+      .delete()
+      .eq('id', id)
+      .eq('client_id', user.id)
+
+    if (dbError) {
+      return NextResponse.json({ error: 'Booking not found or you do not have permission to delete it' }, { status: 404 })
+    }
+
+    return NextResponse.json({ message: 'Booking deleted successfully' }, { status: 200 })
+  } catch {
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
+  }
+}

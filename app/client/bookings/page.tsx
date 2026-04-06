@@ -13,7 +13,7 @@ const BookingsPage = async () => {
       time_start, time_end, type, status, created_at,
       services ( label )
     `)
-    .eq("admin_id", user!.id)
+    .eq("client_id", user!.id)
     .order("date", { ascending: false })
     .order("time_start", { ascending: false })
 

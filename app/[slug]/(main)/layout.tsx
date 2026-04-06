@@ -23,15 +23,24 @@ export default async function MainLayout({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${slug}`)
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("first_name, last_name, email, avatar_url")
-    .eq("id", user.id)
-    .single()
+  const [{ data: profile }, { data: settings }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("first_name, last_name, email, avatar_url")
+      .eq("id", user.id)
+      .single(),
+    supabase
+      .from("settings")
+      .select("business_name, logo_url")
+      .eq("slug", slug)
+      .maybeSingle(),
+  ])
 
-  const name   = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Customer"
-  const email  = profile?.email ?? ""
-  const avatar = profile?.avatar_url ?? ""
+  const name         = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Customer"
+  const email        = profile?.email ?? ""
+  const avatar       = profile?.avatar_url ?? ""
+  const businessName = settings?.business_name || slug.replace(/-/g, " ")
+  const logoUrl      = settings?.logo_url ?? null
 
   return (
     <SidebarProvider
@@ -43,7 +52,7 @@ export default async function MainLayout({
         } as React.CSSProperties
       }
     >
-      <UserSidebar slug={slug} user={{ name, email, avatar }} logoutRedirect={`/${slug}`} variant="inset" />
+      <UserSidebar slug={slug} user={{ name, email, avatar }} business={{ name: businessName, logoUrl }} logoutRedirect={`/${slug}`} variant="inset" />
       <SidebarInset className="overflow-hidden">
         {/* Wrapper is relative so the absolute wave is scoped to this area */}
         <div className="relative flex flex-1 flex-col">

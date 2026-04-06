@@ -39,7 +39,7 @@ export type BookingReceiptData = {
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 pb-1">
-      <span className="h-3.5 w-1 rounded-full bg-gradient-to-b from-[#3F51B5] to-[#329A9A]" />
+      <span className="h-3.5 w-1 rounded-full" style={{ background: "var(--slug-gradient)" }} />
       <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{children}</p>
     </div>
   )
@@ -48,7 +48,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 border-b py-2.5 last:border-0">
-      <span className="shrink-0 text-[#3A79C3]">{icon}</span>
+      <span className="shrink-0 text-[var(--slug-primary)]">{icon}</span>
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="ml-auto text-right text-sm font-semibold">{value}</span>
     </div>
@@ -128,7 +128,7 @@ export function BookingReceipt({ data }: { data: BookingReceiptData }) {
       <Card className="overflow-hidden">
 
         {/* ── Header ── */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-[#3F51B5] via-[#3A79C3] to-[#329A9A] px-6 py-8 text-white">
+        <div className="relative overflow-hidden px-6 py-8 text-white" style={{ background: "var(--slug-gradient)" }}>
           {/* decorative circles */}
           <div className="absolute -top-8 -right-8 size-40 rounded-full bg-white/5" />
           <div className="absolute -bottom-10 -left-6 size-32 rounded-full bg-white/5" />
@@ -216,7 +216,7 @@ export function BookingReceipt({ data }: { data: BookingReceiptData }) {
             variant="outline"
             size="sm"
             onClick={() => window.print()}
-            className="shrink-0 gap-1.5 text-muted-foreground hover:border-[#3A79C3] hover:text-[#3A79C3]"
+            className="shrink-0 gap-1.5 text-muted-foreground hover:border-[var(--slug-primary)] hover:text-[var(--slug-primary)]"
           >
             <IconPrinter className="size-3.5" />
             Print

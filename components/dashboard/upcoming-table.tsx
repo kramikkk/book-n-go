@@ -14,7 +14,13 @@ import {
 } from "@tanstack/react-table"
 import { ArrowUpDown, MoreHorizontalIcon } from "lucide-react"
 import { IconCalendarClock } from "@tabler/icons-react"
+import { toast } from "sonner"
 
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -46,7 +52,10 @@ const statusClass: Record<string, string> = {
   Pending: "border-yellow-500 text-yellow-600",
 }
 
-const columns: ColumnDef<Booking>[] = [
+function buildColumns(
+  handleStatusChange: (id: string, status: 'Completed' | 'Canceled') => void,
+  setCancelTarget: (id: string) => void,
+): ColumnDef<Booking>[] { return [
   {
     id: "select",
     header: ({ table }) => (
@@ -97,7 +106,7 @@ const columns: ColumnDef<Booking>[] = [
       </Button>
     ),
     cell: ({ row }) => (
-      <span>{row.original.date.toLocaleDateString("default", { month: "short", day: "numeric", year: "numeric" })}</span>
+      <span>{new Date(row.original.date).toLocaleDateString("default", { month: "short", day: "numeric", year: "numeric" })}</span>
     ),
   },
   {
@@ -142,32 +151,56 @@ const columns: ColumnDef<Booking>[] = [
         <DropdownMenuContent align="end">
           <div className="flex flex-col gap-0.5 px-2 py-1.5">
             <span className="text-xs font-medium">{row.original.name}</span>
-            <span className="text-xs text-muted-foreground">{row.original.email}</span>
             <span className="text-xs text-muted-foreground">{row.original.contact}</span>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>View Details</DropdownMenuItem>
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-          <DropdownMenuItem>Mark as Completed</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Cancel Booking</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleStatusChange(row.original.id!, 'Completed')}>
+            Mark as Completed
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => setCancelTarget(row.original.id!)}
+          >
+            Cancel Booking
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
   },
-]
+]}
 
 export function UpcomingTable({ bookings }: UpcomingTableProps) {
+  const [data, setData] = React.useState<Booking[]>(bookings)
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({ email: false, contact: false })
   const [rowSelection, setRowSelection] = React.useState({})
+  const [cancelTarget, setCancelTarget] = React.useState<string | null>(null)
+
+  const handleStatusChange = React.useCallback(async (id: string, status: 'Completed' | 'Canceled') => {
+    const res = await fetch(`/api/client/bookings/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    if (!res.ok) {
+      toast.error('Failed to update booking status')
+      return
+    }
+    setData((prev) => prev.filter((b) => b.id !== id))
+    toast.success(`Booking marked as ${status}`)
+  }, [])
+
+  const columns = React.useMemo(
+    () => buildColumns(handleStatusChange, setCancelTarget),
+    [handleStatusChange, setCancelTarget]
+  )
 
   const upcomingBookings = React.useMemo(() => {
-    return bookings
+    return data
       .filter((b) => b.status === "Pending")
       .sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [bookings])
+  }, [data])
 
   const table = useReactTable({
     data: upcomingBookings,
@@ -183,6 +216,29 @@ export function UpcomingTable({ bookings }: UpcomingTableProps) {
   })
 
   return (
+    <>
+    <AlertDialog open={!!cancelTarget} onOpenChange={(open) => !open && setCancelTarget(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancel this booking?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will mark the booking as Canceled. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Keep Booking</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={() => {
+              if (cancelTarget) handleStatusChange(cancelTarget, 'Canceled')
+              setCancelTarget(null)
+            }}
+          >
+            Cancel Booking
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between gap-2">
@@ -234,5 +290,6 @@ export function UpcomingTable({ bookings }: UpcomingTableProps) {
         </div>
       </CardContent>
     </Card>
+    </>
   )
 }

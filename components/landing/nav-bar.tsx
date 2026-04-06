@@ -2,15 +2,17 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X } from "lucide-react"
 
 const Navbar = () => {
   const [activeSection, setActiveSection] = useState("home")
   const [scrolled, setScrolled] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
+    setIsMounted(true)
     const handleScrollEvent = () => {
       setScrolled(window.scrollY > 50)
     }
@@ -39,10 +41,14 @@ const Navbar = () => {
     }
   }, [])
 
-  const handleScroll = (id: string) => {
+  const handleScroll = (id: string, isMobile = false) => {
+    if (isMobile) setIsMenuOpen(false)
+    
     const section = document.getElementById(id)
     if (section) {
-      section.scrollIntoView({ behavior: "smooth" })
+      const yOffset = -80 // Height of fixed header
+      const y = section.getBoundingClientRect().top + window.pageYOffset + yOffset
+      window.scrollTo({ top: y, behavior: "smooth" })
       setActiveSection(id)
     }
   }
@@ -114,46 +120,48 @@ const Navbar = () => {
       <div className="md:hidden flex items-center">
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className={`p-2 transition-colors duration-300 ${scrolled ? "text-[#2F44AD]" : "text-white"}`}
+          className={`p-2 transition-colors duration-300 relative z-[60] ${
+            (scrolled || isMenuOpen) ? "text-[#2F44AD]" : "text-white"
+          }`}
+          aria-label="Toggle menu"
         >
           {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
 
       {/* MOBILE DROPDOWN MENU */}
-      <motion.div
-        initial={false}
-        animate={isMenuOpen ? { height: "auto", opacity: 1, display: "block" } : { height: 0, opacity: 0, transitionEnd: { display: "none" } }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className={`absolute top-20 left-0 w-full overflow-hidden md:hidden bg-white backdrop-blur-xl border-b border-gray-100 shadow-xl z-40`}
-      >
-        <div className="flex flex-col p-6 space-y-4">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                handleScroll(item.id)
-                setIsMenuOpen(false)
-              }}
-              className={`text-left text-lg font-medium transition-colors ${
-                activeSection === item.id ? "text-[#2F44AD]" : "text-gray-600 hover:text-[#2B9698]"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-          {/* Mobile Login Option */}
-          <button
-            onClick={() => {
-              handleScroll("home")
-              setIsMenuOpen(false)
-            }}
-            className="text-left text-lg font-semibold text-[#3FB09C] pt-2 border-t border-gray-50 hover:text-[#2B9698] transition-colors"
+      <AnimatePresence>
+        {isMounted && isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="absolute top-20 left-0 w-full overflow-hidden md:hidden bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-xl z-40"
           >
-            Login
-          </button>
-        </div>
-      </motion.div>
+            <div className="flex flex-col p-6 space-y-4">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleScroll(item.id, true)}
+                  className={`text-left text-lg font-medium transition-colors ${
+                    activeSection === item.id ? "text-[#2F44AD]" : "text-gray-600 hover:text-[#2B9698]"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+              {/* Mobile Login Option */}
+              <button
+                onClick={() => handleScroll("home", true)}
+                className="text-left text-lg font-semibold text-[#3FB09C] pt-2 border-t border-gray-50 hover:text-[#2B9698] transition-colors"
+              >
+                Login
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

@@ -54,13 +54,22 @@ function getNavItems(slug: string) {
 export function UserSidebar({
   slug,
   user,
+  business,
   logoutRedirect,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   slug: string
   user: { name: string; email: string; avatar: string }
+  business?: { name: string; logoUrl: string | null }
   logoutRedirect?: string
 }) {
+  const initials = (business?.name ?? "BG")
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase()
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -72,11 +81,11 @@ export function UserSidebar({
             >
               <a href="#" className="group/logo flex w-full items-center gap-3">
                 <Avatar className="h-10 w-10 overflow-hidden rounded-lg border border-[color-mix(in_srgb,var(--slug-primary)_30%,transparent)] bg-[color-mix(in_srgb,var(--slug-primary)_10%,transparent)] transition-transform duration-200 ease-out group-hover/logo:scale-105">
-                  <AvatarImage src="/BNGLogo.png" alt="BookNGo" className="scale-125 object-cover" />
-                  <AvatarFallback className="rounded-lg text-sm font-bold text-[var(--slug-primary)]">BG</AvatarFallback>
+                  <AvatarImage src={business?.logoUrl ?? "/BNGLogo.png"} alt={business?.name ?? "BookNGo"} className="scale-125 object-cover" />
+                  <AvatarFallback className="rounded-lg text-sm font-bold text-[var(--slug-primary)]">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="flex min-w-0 flex-1 flex-col transition-transform duration-200 ease-out group-hover/logo:translate-x-0.5">
-                  <span className="slug-gradient-text text-xl font-bold">BookNGo</span>
+                  <span className="slug-gradient-text text-xl font-bold">{business?.name ?? "BookNGo"}</span>
                   <span className="text-xs font-medium text-muted-foreground">User Panel</span>
                 </div>
               </a>

@@ -11,7 +11,7 @@ import Footer from "@/components/landing/footer";
 
 const Page = () => {
   return (
-    <div className="relative min-h-screen bg-[#EEF5F4] overflow-hidden">
+    <div className="relative min-h-screen bg-[#EEF5F4] overflow-x-hidden">
       <Navbar />
 
       {/* MAIN CONTENT */}

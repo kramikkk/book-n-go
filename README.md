@@ -1,5 +1,7 @@
 # BookNGo
 
+![BookNGo cover](public/bookngo-cover-photo.jpeg)
+
 A multi-tenant SaaS appointment booking platform built with Next.js and Supabase.
 
 ## Overview
